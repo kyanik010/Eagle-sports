@@ -170,15 +170,19 @@ class ExternalAudioEngine(
 
     fun setDelay(delay: Int) {
         val clamped = delay.coerceIn(-3000, 3000)
+        val previousDelay = _delayMs.value
+        val deltaMs = clamped - previousDelay
+
         _delayMs.value = clamped
         pendingDelayMs = clamped
 
-        // Apply delay relative to audio position without affecting video stream
-        audioPlayer?.let { player ->
-            if (player.isCurrentMediaItemSeekable) {
-                val currentPos = player.currentPosition
-                val targetPos = (currentPos + clamped).coerceAtLeast(0L)
-                player.seekTo(targetPos)
+        // Adjust ONLY the external audio timeline by the amount the user changed.
+        // The video player is never seeked, paused, reloaded, or recreated.
+        if (deltaMs != 0) {
+            audioPlayer?.let { player ->
+                if (player.isCurrentMediaItemSeekable) {
+                    player.seekTo((player.currentPosition + deltaMs).coerceAtLeast(0L))
+                }
             }
         }
     }
