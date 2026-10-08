@@ -24,9 +24,21 @@ jobs:
           java-version: '17'
 
       - name: Install required Android SDK packages
+        shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.1.0"
+          set -e
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager -print -quit)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager was not found under $SDK_ROOT"
+            find "$SDK_ROOT" -maxdepth 4 -type d -print | head -100 || true
+            exit 1
+          fi
+          echo "Using sdkmanager: $SDKMANAGER"
+          SDK_DIR="$(dirname "$SDKMANAGER")"
+          export PATH="$SDK_DIR:$SDK_ROOT/platform-tools:$PATH"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.1.0"
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
