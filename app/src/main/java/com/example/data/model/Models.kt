@@ -4,20 +4,9 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Live Channel entity with a stable ID independent of playlist ordering.
- */
-@Entity(
-    tableName = "channels",
-    indices = [
-        Index(value = ["groupName"]),
-        Index(value = ["isFavorite"]),
-        Index(value = ["channelNumber"])
-    ]
-)
+@Entity(tableName = "channels", indices = [Index(value = ["groupName"]), Index(value = ["isFavorite"]), Index(value = ["channelNumber"])])
 data class ChannelEntity(
-    @PrimaryKey
-    val stableId: String,
+    @PrimaryKey val stableId: String,
     val name: String,
     val streamUrl: String,
     val groupName: String = "All",
@@ -26,27 +15,16 @@ data class ChannelEntity(
     val tvgName: String? = null,
     val channelNumber: Int = 0,
     val isFavorite: Boolean = false,
-    val streamType: String = "live", // "live", "hls", "ts"
+    val streamType: String = "live",
     val epgCurrentTitle: String? = null,
     val epgNextTitle: String? = null,
     val updatedTimestamp: Long = System.currentTimeMillis()
 )
 
-/**
- * External Audio track entity mapped via tvgId or normalized channel name.
- */
-@Entity(
-    tableName = "external_audio",
-    indices = [
-        Index(value = ["channelStableId"]),
-        Index(value = ["tvgId"]),
-        Index(value = ["normalizedName"])
-    ]
-)
+@Entity(tableName = "external_audio", indices = [Index(value = ["channelStableId"]), Index(value = ["tvgId"]), Index(value = ["normalizedName"])])
 data class ExternalAudioEntity(
-    @PrimaryKey
-    val stableId: String,
-    val channelStableId: String? = null, // Linked if directly matched
+    @PrimaryKey val stableId: String,
+    val channelStableId: String? = null,
     val tvgId: String? = null,
     val normalizedName: String,
     val title: String,
@@ -66,6 +44,7 @@ data class EpgProgram(
 
 data class UserSession(
     val username: String,
+    val iptvPassword: String,
     val token: String? = null,
     val iptvHost: String,
     val status: String = "Active",
