@@ -66,6 +66,7 @@ data class EpgProgram(
 
 data class UserSession(
     val username: String,
+    val password: String? = null,
     val token: String? = null,
     val iptvHost: String,
     val status: String = "Active",
