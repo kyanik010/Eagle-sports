@@ -35,6 +35,7 @@ class ExternalAudioEngine(
 ) {
     private var audioPlayer: ExoPlayer? = null
     private var currentAudio: ExternalAudioEntity? = null
+    private var pendingDelayMs = 0
 
     private val _status = MutableStateFlow(PlaybackStatus.IDLE)
     val status: StateFlow<PlaybackStatus> = _status.asStateFlow()
@@ -116,7 +117,7 @@ class ExternalAudioEngine(
         audioPlayer = player
     }
 
-    fun playExternalAudio(audio: ExternalAudioEntity) {
+    fun playExternalAudio(audio: ExternalAudioEntity, videoPositionMs: Long = 0L) {
         currentAudio = audio
         _errorMessage.value = null
         _status.value = PlaybackStatus.PREPARING
@@ -133,6 +134,11 @@ class ExternalAudioEngine(
             player.setMediaItem(mediaItem)
             player.prepare()
             player.playWhenReady = true
+            // For seekable external streams, apply only the user-selected manual offset.
+            // The video engine is never touched here.
+            if (player.isCurrentMediaItemSeekable && pendingDelayMs != 0) {
+                player.seekTo((videoPositionMs + pendingDelayMs).coerceAtLeast(0L))
+            }
         }
     }
 
@@ -165,6 +171,7 @@ class ExternalAudioEngine(
     fun setDelay(delay: Int) {
         val clamped = delay.coerceIn(-3000, 3000)
         _delayMs.value = clamped
+        pendingDelayMs = clamped
 
         // Apply delay relative to audio position without affecting video stream
         audioPlayer?.let { player ->
