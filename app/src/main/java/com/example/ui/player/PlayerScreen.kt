@@ -140,11 +140,16 @@ fun PlayerScreen(
         }
     }
 
+    val exitPlayer = {
+        viewModel.stopPlayback()
+        onBack()
+    }
+
     BackHandler {
         if (isFullscreen) {
             isFullscreen = false
         } else {
-            onBack()
+            exitPlayer()
         }
     }
 
@@ -326,7 +331,7 @@ fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = onBack,
+                        onClick = exitPlayer,
                         modifier = Modifier.testTag("player_back_button")
                     ) {
                         Icon(
