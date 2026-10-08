@@ -29,20 +29,20 @@ class AuthViewModel(
 
     fun login(username: String, pass: String) {
         val trimmedUser = username.trim()
-        val trimmedPass = pass.trim()
+        val enteredPass = pass
 
         if (trimmedUser.isEmpty()) {
             _uiState.value = LoginUiState.Error("Please enter your Username")
             return
         }
-        if (trimmedPass.isEmpty()) {
+        if (enteredPass.isBlank()) {
             _uiState.value = LoginUiState.Error("Please enter your Password")
             return
         }
 
         _uiState.value = LoginUiState.Loading
         viewModelScope.launch {
-            val result = iptvProvider.authenticate(trimmedUser, trimmedPass)
+            val result = iptvProvider.authenticate(trimmedUser, enteredPass)
             if (result.isSuccess) {
                 val session = result.getOrThrow()
                 preferencesManager.saveSession(session)

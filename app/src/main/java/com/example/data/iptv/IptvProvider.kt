@@ -33,7 +33,7 @@ class DefaultIptvProvider(
 
     override suspend fun authenticate(username: String, password: String): Result<UserSession> {
         val user = username.trim()
-        val pass = password.trim()
+        val pass = password
 
         if (user.isEmpty() || pass.isEmpty()) {
             return Result.failure(IllegalArgumentException("Username and Password cannot be empty"))
