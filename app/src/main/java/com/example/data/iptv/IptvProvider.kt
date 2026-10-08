@@ -32,7 +32,10 @@ class DefaultIptvProvider(
             val payload = org.json.JSONObject().put("username", trimmedUser).put("password", trimmedPass)
             val request = okhttp3.Request.Builder().url("https://quaftlmuobshbnlhctmf.supabase.co/functions/v1/device-activation")
                 .post(payload.toString().toRequestBody("application/json".toMediaType()))
-                .header("Content-Type", "application/json").header("User-Agent", "EagleSports/1.0 (Android TV)").build()
+                .header("Content-Type", "application/json")
+                // Supabase Edge Functions require a project API key even when verify_jwt is disabled.
+                .header("apikey", "sb_publishable_6mdnO-ezptIZzRKNfEbzaA_e9B-ulL5")
+                .header("User-Agent", "EagleSports/1.0 (Android TV)").build()
             client.newCall(request).execute().use { httpResponse ->
                 val body = httpResponse.body?.string().orEmpty()
                 val json = runCatching { org.json.JSONObject(body) }.getOrElse { return Result.failure(IllegalStateException("Invalid activation server response")) }
