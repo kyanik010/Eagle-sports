@@ -58,7 +58,7 @@ class DualPlayerController(
         videoEngine.setMuted(true)
 
         // Start external audio engine independently
-        audioEngine.playExternalAudio(audio)
+        audioEngine.playExternalAudio(audio, videoEngine.getPlayer()?.currentPosition ?: 0L)
     }
 
     /**
