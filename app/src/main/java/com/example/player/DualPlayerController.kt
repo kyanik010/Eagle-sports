@@ -80,6 +80,11 @@ class DualPlayerController(
         }
     }
 
+    fun stopAll() {
+        audioEngine.stopExternalAudio()
+        videoEngine.stop()
+    }
+
     fun release() {
         videoEngine.release()
         audioEngine.release()
