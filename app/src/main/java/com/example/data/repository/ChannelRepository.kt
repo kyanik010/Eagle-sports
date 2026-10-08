@@ -64,7 +64,44 @@ class ChannelRepository(
 
     suspend fun getExternalAudioForChannel(channel: ChannelEntity): List<ExternalAudioEntity> = withContext(Dispatchers.IO) {
         val normalized = com.example.data.iptv.M3uParser.normalizeName(channel.name)
-        audioDao.getAudioForChannel(channel.stableId, channel.tvgId, normalized)
+        return@withContext audioDao.getAudioForChannel(channel.stableId, channel.tvgId, normalized)
+    }
+
+    /**
+     * Revalidates credentials against the enabled host list once when the saved host fails.
+     * The activation function tries the configured hosts and returns the currently working host.
+     * The optional external audio URL is preserved by the backend and remains non-blocking.
+     */
+    private suspend fun fetchChannelsWithHostRefresh(
+        session: UserSession
+    ): Pair<UserSession, Result<List<ChannelEntity>>> {
+        val firstAttempt = iptvProvider.fetchChannels(session)
+        if (firstAttempt.isSuccess) return session to firstAttempt
+
+        val password = session.password
+        if (session.username.isBlank() || password.isNullOrBlank()) {
+            return session to firstAttempt
+        }
+
+        val refreshResult = iptvProvider.authenticate(session.username, password)
+        if (refreshResult.isFailure) {
+            val original = firstAttempt.exceptionOrNull()?.message ?: "Channel sync failed"
+            val refreshError = refreshResult.exceptionOrNull()?.message ?: "Host revalidation failed"
+            return session to Result.failure(
+                IllegalStateException("$original; automatic host revalidation failed: $refreshError")
+            )
+        }
+
+        val refreshedSession = refreshResult.getOrThrow()
+        preferencesManager.saveSession(refreshedSession)
+        val retry = iptvProvider.fetchChannels(refreshedSession)
+        if (retry.isFailure) {
+            val error = retry.exceptionOrNull()?.message ?: "Channel sync failed after host revalidation"
+            return refreshedSession to Result.failure(
+                IllegalStateException("Channel sync failed after automatic host revalidation: $error")
+            )
+        }
+        return refreshedSession to retry
     }
 
     /**
@@ -78,12 +115,12 @@ class ChannelRepository(
     suspend fun syncAll(onProgress: (SyncState) -> Unit = {}): Result<Pair<Int, Int>> = withContext(Dispatchers.IO) {
         try {
             onProgress(SyncState.Syncing("Connecting to IPTV service...", 0.1f))
-            val session = preferencesManager.userSession.firstOrNull()
+            val savedSession = preferencesManager.userSession.firstOrNull()
                 ?: return@withContext Result.failure(IllegalStateException("No active user session"))
 
-            // Step 1: Channels sync
+            // If the locally saved host fails, revalidate once through Supabase and retry on its selected host.
             onProgress(SyncState.Syncing("Downloading channels...", 0.3f))
-            val channelsResult = iptvProvider.fetchChannels(session)
+            val (session, channelsResult) = fetchChannelsWithHostRefresh(savedSession)
             if (channelsResult.isFailure) {
                 val err = channelsResult.exceptionOrNull()?.message ?: "Failed to fetch channels"
                 onProgress(SyncState.Error(err))
@@ -99,7 +136,7 @@ class ChannelRepository(
             onProgress(SyncState.Syncing("Updating channels database...", 0.6f))
             channelDao.atomicUpdateCatalog(newChannels)
 
-            // Step 2: External audio sync
+            // Step 2: External audio sync (optional; failures never block video channels).
             var audioCount = 0
             val audioUrl = session.externalAudioUrl
             if (!audioUrl.isNullOrBlank()) {
@@ -123,9 +160,9 @@ class ChannelRepository(
 
     suspend fun syncChannelsOnly(): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            val session = preferencesManager.userSession.firstOrNull()
+            val savedSession = preferencesManager.userSession.firstOrNull()
                 ?: return@withContext Result.failure(IllegalStateException("No active user session"))
-            val result = iptvProvider.fetchChannels(session)
+            val (session, result) = fetchChannelsWithHostRefresh(savedSession)
             if (result.isSuccess) {
                 val channels = result.getOrThrow()
                 channelDao.atomicUpdateCatalog(channels)
