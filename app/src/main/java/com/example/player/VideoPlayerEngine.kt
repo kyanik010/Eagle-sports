@@ -67,7 +67,7 @@ class VideoPlayerEngine(
             .setUserAgent("EagleSports/1.0 (Linux; Android)")
         val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(1500, 5000, 1000, 2000)
+            .setBufferDurationsMs(2500, 8000, 1000, 2000)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
         val renderersFactory = DefaultRenderersFactory(context)
@@ -197,6 +197,17 @@ class VideoPlayerEngine(
             runCatching { exoPlayer?.volume = clamped }
                 .onFailure { reportPlaybackError("Volume control failed: ${it.message ?: it.javaClass.simpleName}") }
         }
+    }
+
+    fun stop() {
+        reconnectJob?.cancel()
+        currentChannel = null
+        reconnectAttempts = 0
+        runCatching {
+            exoPlayer?.stop()
+            exoPlayer?.clearMediaItems()
+        }
+        _status.value = PlaybackStatus.IDLE
     }
 
     fun release() {
