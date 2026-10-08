@@ -3,8 +3,8 @@ package com.example
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -76,8 +76,6 @@ fun EagleSportsAppContent() {
     val totalChannels by repository.totalCount.collectAsState(initial = 0)
     val favoritesList by repository.favoriteChannels.collectAsState(initial = emptyList())
 
-    // Always start on Login until the persisted authentication state is known.
-    // This prevents an unauthenticated user from seeing Home even briefly.
     val backStack = remember {
         mutableStateListOf<AppDestination>(AppDestination.Login)
     }
