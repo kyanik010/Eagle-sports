@@ -62,6 +62,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         dualPlayerController.togglePlayPause()
     }
 
+    fun stopPlayback() {
+        dualPlayerController.stopAll()
+    }
+
     fun retryVideo() {
         dualPlayerController.videoEngine.retryPlayback()
     }
