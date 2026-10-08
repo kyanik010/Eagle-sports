@@ -20,6 +20,7 @@ class PreferencesManager(private val context: Context) {
     companion object {
         val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         val KEY_USERNAME = stringPreferencesKey("username")
+        val KEY_PASSWORD = stringPreferencesKey("password")
         val KEY_AUTH_TOKEN = stringPreferencesKey("auth_token")
         val KEY_IPTV_HOST = stringPreferencesKey("iptv_host")
         val KEY_SUB_STATUS = stringPreferencesKey("sub_status")
@@ -54,6 +55,7 @@ class PreferencesManager(private val context: Context) {
         else {
             UserSession(
                 username = prefs[KEY_USERNAME] ?: "",
+                password = prefs[KEY_PASSWORD],
                 token = prefs[KEY_AUTH_TOKEN],
                 iptvHost = prefs[KEY_IPTV_HOST] ?: "",
                 status = prefs[KEY_SUB_STATUS] ?: "Active",
@@ -78,6 +80,7 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[KEY_IS_LOGGED_IN] = true
             prefs[KEY_USERNAME] = session.username
+            session.password?.let { prefs[KEY_PASSWORD] = it }
             session.token?.let { prefs[KEY_AUTH_TOKEN] = it }
             prefs[KEY_IPTV_HOST] = session.iptvHost
             prefs[KEY_SUB_STATUS] = session.status
@@ -90,6 +93,7 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[KEY_IS_LOGGED_IN] = false
             prefs.remove(KEY_USERNAME)
+            prefs.remove(KEY_PASSWORD)
             prefs.remove(KEY_AUTH_TOKEN)
             prefs.remove(KEY_IPTV_HOST)
             prefs.remove(KEY_SUB_STATUS)
