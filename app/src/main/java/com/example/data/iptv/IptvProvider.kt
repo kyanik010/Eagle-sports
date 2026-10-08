@@ -62,7 +62,7 @@ class DefaultIptvProvider(
                     val error = json?.optString("error").orEmpty()
                     return Result.failure(
                         IllegalStateException(
-                            "device-activation HTTP \${response.code}: " +
+                            "device-activation HTTP ${response.code}: " +
                                 error.ifBlank { raw.take(200).ifBlank { "empty response" } }
                         )
                     )
@@ -80,7 +80,7 @@ class DefaultIptvProvider(
 
                 if (!activated || config == null) {
                     return Result.failure(
-                        IllegalStateException("device-activation: \${statusMessage(status)}")
+                        IllegalStateException("device-activation: ${statusMessage(status)}")
                     )
                 }
 
@@ -117,7 +117,7 @@ class DefaultIptvProvider(
         } catch (e: Exception) {
             Result.failure(
                 IllegalStateException(
-                    "device-activation connection failed: \${e.message ?: e.javaClass.simpleName}",
+                    "device-activation connection failed: ${e.message ?: e.javaClass.simpleName}",
                     e
                 )
             )
@@ -129,7 +129,7 @@ class DefaultIptvProvider(
         "host_disabled" -> "host_disabled (assigned Host is disabled or missing)"
         "expired" -> "expired (subscription/device has expired)"
         "ambiguous_credentials" -> "ambiguous_credentials (multiple matching accounts)"
-        "suspended", "disabled", "blocked" -> "\${status} (device is not active)"
+        "suspended", "disabled", "blocked" -> "${status} (device is not active)"
         "unknown" -> "unknown (backend did not return a status)"
         else -> status
     }
@@ -145,7 +145,7 @@ class DefaultIptvProvider(
             }
 
             val url =
-                "\${host}/player_api.php?username=\${user}&password=\${pass}&action=get_live_streams"
+                "${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams"
 
             val request = Request.Builder()
                 .url(url)
@@ -155,7 +155,7 @@ class DefaultIptvProvider(
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     return Result.failure(
-                        IllegalStateException("IPTV API HTTP \${response.code}")
+                        IllegalStateException("IPTV API HTTP ${response.code}")
                     )
                 }
 
@@ -176,7 +176,7 @@ class DefaultIptvProvider(
         } catch (e: Exception) {
             Result.failure(
                 IllegalStateException(
-                    "IPTV channel sync failed: \${e.message ?: e.javaClass.simpleName}",
+                    "IPTV channel sync failed: ${e.message ?: e.javaClass.simpleName}",
                     e
                 )
             )
@@ -189,13 +189,13 @@ class DefaultIptvProvider(
         return try {
             val request = Request.Builder()
                 .url(externalAudioUrl)
-                .header("User-Agent", "\$USER_AGENT (Audio)")
+                .header("User-Agent", "$USER_AGENT (Audio)")
                 .build()
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     return Result.failure(
-                        IllegalStateException("External audio HTTP \${response.code}")
+                        IllegalStateException("External audio HTTP ${response.code}")
                     )
                 }
 
@@ -216,7 +216,7 @@ class DefaultIptvProvider(
         } catch (e: Exception) {
             Result.failure(
                 IllegalStateException(
-                    "External audio sync failed: \${e.message ?: e.javaClass.simpleName}",
+                    "External audio sync failed: ${e.message ?: e.javaClass.simpleName}",
                     e
                 )
             )
@@ -236,16 +236,16 @@ class DefaultIptvProvider(
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val streamId = obj.optInt("stream_id", i + 1)
-            val name = obj.optString("name", "Channel \${streamId}")
+            val name = obj.optString("name", "Channel ${streamId}")
             val icon = obj.optString("stream_icon").ifBlank { null }
             val category = obj.optString("category_name").ifBlank { "Sports" }
             val channelNumber = obj.optInt("num", i + 1)
-            val streamUrl = "\${host}/live/\${user}/\${pass}/\${streamId}.ts"
+            val streamUrl = "${host}/live/${user}/${pass}/${streamId}.ts"
             val tvgId = obj.optString("epg_channel_id").ifBlank { null }
 
             list.add(
                 ChannelEntity(
-                    stableId = "xtream_\${streamId}",
+                    stableId = "xtream_${streamId}",
                     name = name,
                     streamUrl = streamUrl,
                     groupName = category,
