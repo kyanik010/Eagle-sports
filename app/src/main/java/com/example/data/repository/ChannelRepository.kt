@@ -32,6 +32,7 @@ class ChannelRepository(
     val favoriteChannels: Flow<List<ChannelEntity>> = channelDao.getFavoriteChannels()
     val allGroups: Flow<List<String>> = channelDao.getAllGroups()
     val totalCount: Flow<Int> = channelDao.getChannelCount()
+    val allExternalAudio: Flow<List<ExternalAudioEntity>> = audioDao.getAllAudio()
 
     fun getChannelsByGroup(group: String): Flow<List<ChannelEntity>> {
         return if (group.equals("All", ignoreCase = true) || group.isEmpty()) {
