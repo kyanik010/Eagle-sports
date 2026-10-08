@@ -3,6 +3,9 @@ package com.example.data.iptv
 import com.example.data.model.ChannelEntity
 import com.example.data.model.UserSession
 import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.json.JSONArray
 import java.util.concurrent.TimeUnit
@@ -24,25 +27,38 @@ class DefaultIptvProvider(
     override suspend fun authenticate(username: String, password: String): Result<UserSession> {
         val trimmedUser = username.trim()
         val trimmedPass = password.trim()
-
-        if (trimmedUser.isEmpty() || trimmedPass.isEmpty()) {
-            return Result.failure(IllegalArgumentException("Username and Password cannot be empty"))
-        }
-
-        // A real management/backend API contract is required here.
-        // Never manufacture a host, token, subscription, expiry or audio URL.
-        return Result.failure(
-            IllegalStateException(
-                "Eagle Sports backend authentication is not configured. " +
-                    "Configure the real backend API before enabling production login."
-            )
-        )
+        if (trimmedUser.isEmpty() || trimmedPass.isEmpty()) return Result.failure(IllegalArgumentException("Username and Password cannot be empty"))
+        return try {
+            val payload = org.json.JSONObject().put("username", trimmedUser).put("password", trimmedPass)
+            val request = okhttp3.Request.Builder().url("https://quaftlmuobshbnlhctmf.supabase.co/functions/v1/device-activation")
+                .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                .header("Content-Type", "application/json").header("User-Agent", "EagleSports/1.0 (Android TV)").build()
+            client.newCall(request).execute().use { httpResponse ->
+                val body = httpResponse.body?.string().orEmpty()
+                val json = runCatching { org.json.JSONObject(body) }.getOrElse { return Result.failure(IllegalStateException("Invalid activation server response")) }
+                if (!httpResponse.isSuccessful) return Result.failure(IllegalStateException(json.optString("error").ifBlank { "Activation server error: HTTP " + httpResponse.code }))
+                when (json.optString("status").lowercase()) {
+                    "expired" -> return Result.failure(IllegalStateException("Subscription expired"))
+                    "suspended" -> return Result.failure(IllegalStateException("Subscription suspended"))
+                    "ambiguous_credentials" -> return Result.failure(IllegalStateException("Username or Password is not unique"))
+                    "pending_configuration", "host_disabled" -> return Result.failure(IllegalStateException("Subscription is not configured yet"))
+                }
+                if (!json.optBoolean("activated", false)) return Result.failure(IllegalStateException("Login rejected by activation server"))
+                val config = json.optJSONObject("config") ?: return Result.failure(IllegalStateException("Subscription configuration is missing"))
+                val video = config.optJSONObject("video") ?: return Result.failure(IllegalStateException("Video configuration is missing"))
+                val host = video.optString("server_url").trim().trimEnd('/')
+                val providerUser = video.optString("username").trim()
+                val providerPass = video.optString("password")
+                if (host.isBlank() || providerUser.isBlank() || providerPass.isBlank()) return Result.failure(IllegalStateException("Subscription IPTV configuration is incomplete"))
+                val audioUrl = config.optJSONObject("audio")?.optString("m3u_url")?.trim()?.takeIf { it.isNotBlank() }
+                Result.success(UserSession(username = providerUser, iptvPassword = providerPass, iptvHost = host, status = json.optString("status", "active"), expiryDate = json.optString("expires_at", "Never"), externalAudioUrl = audioUrl))
+            }
+        } catch (e: Exception) { Result.failure(e) }
     }
-
     override suspend fun fetchChannels(session: UserSession): Result<List<ChannelEntity>> {
         return try {
-            val xtreamUrl =
-                "${session.iptvHost}/player_api.php?username=${session.username}&action=get_live_streams"
+            val hostUrl = session.iptvHost.trimEnd('/').toHttpUrl()
+            val xtreamUrl = hostUrl.newBuilder().addPathSegment("player_api.php").addQueryParameter("username", session.username).addQueryParameter("password", session.iptvPassword).addQueryParameter("action", "get_live_streams").build()
 
             val xtreamRequest = Request.Builder()
                 .url(xtreamUrl)
@@ -59,8 +75,7 @@ class DefaultIptvProvider(
                 }
             }
 
-            val m3uUrl =
-                "${session.iptvHost}/get.php?username=${session.username}&type=m3u_plus&output=ts"
+            val m3uUrl = hostUrl.newBuilder().addPathSegment("get.php").addQueryParameter("username", session.username).addQueryParameter("password", session.iptvPassword).addQueryParameter("type", "m3u_plus").addQueryParameter("output", "ts").build()
 
             val m3uRequest = Request.Builder()
                 .url(m3uUrl)
@@ -137,7 +152,7 @@ class DefaultIptvProvider(
             val category = obj.optString("category_name").ifBlank { "Sports" }
             val channelNumber = obj.optInt("num", i + 1)
             val streamUrl =
-                "${session.iptvHost}/live/${session.username}/$streamId.ts"
+                "${session.iptvHost}/live/${session.username}/${session.iptvPassword}/$streamId.ts"
             val tvgId = obj.optString("epg_channel_id").ifBlank { null }
 
             list.add(
