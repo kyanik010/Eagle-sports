@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.iptv.DefaultIptvProvider
 import com.example.data.preferences.PreferencesManager
 import com.example.data.repository.ChannelRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class LoginUiState {
     object Idle : LoginUiState()
@@ -42,11 +44,14 @@ class AuthViewModel(
 
         _uiState.value = LoginUiState.Loading
         viewModelScope.launch {
-            val result = iptvProvider.authenticate(trimmedUser, enteredPass)
+            // OkHttp execute() is blocking; never run the activation request on Android's main thread.
+            val result = withContext(Dispatchers.IO) {
+                iptvProvider.authenticate(trimmedUser, enteredPass)
+            }
             if (result.isSuccess) {
                 val session = result.getOrThrow()
                 preferencesManager.saveSession(session)
-                // Trigger background initial sync immediately upon successful login
+                // Repository performs initial channel sync on Dispatchers.IO.
                 channelRepository.syncAll()
                 _uiState.value = LoginUiState.Success
             } else {
