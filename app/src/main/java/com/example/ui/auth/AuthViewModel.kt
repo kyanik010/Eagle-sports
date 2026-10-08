@@ -46,9 +46,15 @@ class AuthViewModel(
             if (result.isSuccess) {
                 val session = result.getOrThrow()
                 preferencesManager.saveSession(session)
-                // Trigger background initial sync immediately upon successful login
-                channelRepository.syncAll()
+
+                // Show the app immediately after authentication.
+                // Catalog synchronization runs independently so login is never blocked
+                // by IPTV/audio M3U download or parsing.
                 _uiState.value = LoginUiState.Success
+
+                viewModelScope.launch {
+                    channelRepository.syncAll()
+                }
             } else {
                 val err = result.exceptionOrNull()?.message ?: "Authentication failed"
                 _uiState.value = LoginUiState.Error(err)
