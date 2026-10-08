@@ -25,26 +25,16 @@ Deno.serve(async (req: Request) => {
     const { data: saved, error: savedError } = await db.from("customer_subscriptions")
       .select("status,password,expires_at,video_host_id,audio_m3u_url").eq("username", username).maybeSingle();
     if (savedError) throw savedError;
-    if (saved?.status === "suspended") return respond({ activated: false, status: "suspended", config: null }, 403);
-    if (saved?.status === "expired" || (saved?.expires_at && Date.parse(saved.expires_at) <= Date.now())) {
-      return respond({ activated: false, status: "expired", expires_at: saved.expires_at ?? null, config: null }, 403);
-    }
-    let hosts: any[] = [];
+    const { data: enabledHosts, error: hostsError } = await db.from("video_profiles")
+      .select("id,name,server_url,enabled").ilike("name", "HOST::%")
+      .eq("enabled", true).order("created_at", { ascending: true });
+    if (hostsError) throw hostsError;
+    let hosts: any[] = enabledHosts ?? [];
+    // Prefer the customer's last successful host, but fall back to all other enabled hosts.
     if (saved?.video_host_id) {
-      const { data: assigned, error } = await db.from("video_profiles")
-        .select("id,name,server_url,enabled").eq("id", saved.video_host_id)
-        .ilike("name", "HOST::%").maybeSingle();
-      if (error) throw error;
-      if (!assigned || !assigned.enabled || !assigned.server_url) {
-        return respond({ activated: false, status: "host_disabled", config: null }, 503);
-      }
-      hosts = [assigned];
-    } else {
-      const { data, error } = await db.from("video_profiles")
-        .select("id,name,server_url,enabled").ilike("name", "HOST::%")
-        .eq("enabled", true).order("created_at", { ascending: true });
-      if (error) throw error;
-      hosts = data ?? [];
+      hosts = hosts.sort((a, b) =>
+        Number(b.id === saved.video_host_id) - Number(a.id === saved.video_host_id)
+      );
     }
     if (!hosts.length) return respond({ activated: false, status: "no_enabled_hosts", config: null }, 503);
 
