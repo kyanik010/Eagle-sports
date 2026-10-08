@@ -29,10 +29,6 @@ Deno.serve(async (req: Request) => {
     if (saved?.status === "expired" || (saved?.expires_at && Date.parse(saved.expires_at) <= Date.now())) {
       return respond({ activated: false, status: "expired", expires_at: saved.expires_at ?? null, config: null }, 403);
     }
-    if (saved && String(saved.password ?? "") !== password) {
-      return respond({ activated: false, status: "invalid_credentials", config: null }, 401);
-    }
-
     let hosts: any[] = [];
     if (saved?.video_host_id) {
       const { data: assigned, error } = await db.from("video_profiles")
@@ -85,7 +81,7 @@ Deno.serve(async (req: Request) => {
     if (expiry && Date.parse(expiry) <= Date.now()) {
       const { error } = await db.from("customer_subscriptions").upsert({
         username, password, status: "expired", expires_at: expiry, video_host_id: match.id,
-        last_seen_at: now, updated_at: now,
+        audio_m3u_url: saved?.audio_m3u_url ?? null, last_seen_at: now, updated_at: now,
       }, { onConflict: "username" });
       if (error) throw error;
       return respond({ activated: false, status: "expired", expires_at: expiry, config: null }, 403);
@@ -93,7 +89,7 @@ Deno.serve(async (req: Request) => {
 
     const { error: saveError } = await db.from("customer_subscriptions").upsert({
       username, password, status: "active", expires_at: expiry, video_host_id: match.id,
-      last_seen_at: now, updated_at: now,
+      audio_m3u_url: saved?.audio_m3u_url ?? null, last_seen_at: now, updated_at: now,
     }, { onConflict: "username" });
     if (saveError) throw saveError;
 
