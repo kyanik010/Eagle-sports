@@ -49,7 +49,12 @@ class ExternalAudioEngine(
     val volume: StateFlow<Float> = _volume.asStateFlow()
 
     init {
-        initAudioPlayer()
+        try {
+            initAudioPlayer()
+        } catch (e: Exception) {
+            _errorMessage.value = "External audio unavailable: ${e.message ?: e.javaClass.simpleName}"
+            _status.value = PlaybackStatus.ERROR
+        }
     }
 
     private fun initAudioPlayer() {
@@ -66,8 +71,8 @@ class ExternalAudioEngine(
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                1000, // minBufferMs
-                4000, // maxBufferMs
+                2000, // minBufferMs
+                6000, // maxBufferMs
                 800,  // bufferForPlaybackMs
                 1500  // bufferForPlaybackAfterRebufferMs
             )
@@ -122,7 +127,11 @@ class ExternalAudioEngine(
         _status.value = PlaybackStatus.PREPARING
 
         scope.launch(Dispatchers.Main) {
-            val player = audioPlayer ?: return@launch
+            val player = audioPlayer ?: run {
+                _errorMessage.value = "External audio unavailable"
+                _status.value = PlaybackStatus.ERROR
+                return@launch
+            }
             val mediaItem = MediaItem.Builder()
                 .setUri(Uri.parse(audio.streamUrl))
                 .setMediaId(audio.stableId)
