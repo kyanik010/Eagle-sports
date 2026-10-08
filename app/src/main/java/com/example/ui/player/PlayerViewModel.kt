@@ -34,6 +34,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _availableAudioTracks = MutableStateFlow<List<ExternalAudioEntity>>(emptyList())
     val availableAudioTracks: StateFlow<List<ExternalAudioEntity>> = _availableAudioTracks.asStateFlow()
 
+    private val _audioLibrary = MutableStateFlow<List<ExternalAudioEntity>>(emptyList())
+    val audioLibrary: StateFlow<List<ExternalAudioEntity>> = _audioLibrary.asStateFlow()
+
     private val _channelsList = MutableStateFlow<List<ChannelEntity>>(emptyList())
     val channelsList: StateFlow<List<ChannelEntity>> = _channelsList.asStateFlow()
 
@@ -44,6 +47,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repository.allChannels.collect {
                 _channelsList.value = it
+            }
+        }
+        viewModelScope.launch {
+            repository.allExternalAudio.collect {
+                _audioLibrary.value = it
             }
         }
     }
