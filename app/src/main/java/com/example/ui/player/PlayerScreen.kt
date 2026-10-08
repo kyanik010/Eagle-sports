@@ -111,6 +111,7 @@ fun PlayerScreen(
     val videoError by viewModel.videoError.collectAsState()
     val audioError by viewModel.audioError.collectAsState()
     val availableAudioTracks by viewModel.availableAudioTracks.collectAsState()
+    val audioLibrary by viewModel.audioLibrary.collectAsState()
 
     var showControls by remember { mutableStateOf(true) }
     var showMoreSheet by remember { mutableStateOf(false) }
@@ -542,9 +543,15 @@ fun PlayerScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    if (availableAudioTracks.isEmpty()) {
+                    if (audioLibrary.isEmpty()) {
                         Text(
-                            text = "No matched external audio feeds found for this channel.",
+                            text = "No audio library is currently available.",
+                            color = TextMuted,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else if (availableAudioTracks.isEmpty()) {
+                        Text(
+                            text = "No external audio feeds are matched to this channel.",
                             color = TextMuted,
                             style = MaterialTheme.typography.bodySmall
                         )
