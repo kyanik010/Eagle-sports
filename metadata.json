@@ -1,0 +1,6 @@
+{
+  "name": "Eagle Sports",
+  "description": "Professional Live IPTV sports streaming player with dual independent audio engines",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
