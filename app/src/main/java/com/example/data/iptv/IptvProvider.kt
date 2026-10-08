@@ -28,6 +28,9 @@ class DefaultIptvProvider(
     companion object {
         private const val ACTIVATION_URL =
             "https://quaftlmuobshbnlhctmf.supabase.co/functions/v1/device-activation"
+        // Supabase publishable key is intended for client applications.
+        private const val SUPABASE_PUBLISHABLE_KEY =
+            "sb_publishable_6mdnO-ezptIZzRKNfEbzaA_e9B-ulL5"
         private const val USER_AGENT = "EagleSports/1.0 (Android)"
     }
 
@@ -51,6 +54,7 @@ class DefaultIptvProvider(
                 .post(requestBody)
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
+                .header("apikey", SUPABASE_PUBLISHABLE_KEY)
                 .header("User-Agent", USER_AGENT)
                 .build()
 
