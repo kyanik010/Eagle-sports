@@ -3,7 +3,7 @@ package com.example
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
+import androidx.activity.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -18,9 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.model.ChannelEntity
@@ -51,7 +49,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Keep screen awake for streaming IPTV
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContent {
@@ -79,11 +76,13 @@ fun EagleSportsAppContent() {
     val totalChannels by repository.totalCount.collectAsState(initial = 0)
     val favoritesList by repository.favoriteChannels.collectAsState(initial = emptyList())
 
-    // Backstack navigation management
-    val backStack = remember { mutableStateListOf<AppDestination>(AppDestination.Home) }
-    val currentDestination = backStack.lastOrNull() ?: AppDestination.Home
+    // Always start on Login until the persisted authentication state is known.
+    // This prevents an unauthenticated user from seeing Home even briefly.
+    val backStack = remember {
+        mutableStateListOf<AppDestination>(AppDestination.Login)
+    }
+    val currentDestination = backStack.lastOrNull() ?: AppDestination.Login
 
-    // Synchronize initial login status
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
             backStack.clear()
@@ -94,7 +93,6 @@ fun EagleSportsAppContent() {
         }
     }
 
-    // Custom back handling to maintain stack integrity
     BackHandler(enabled = backStack.size > 1) {
         backStack.removeAt(backStack.lastIndex)
     }
