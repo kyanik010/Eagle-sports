@@ -10,6 +10,7 @@ import com.example.data.model.UserSession
 import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
@@ -100,15 +101,19 @@ class ChannelRepository(
             channelDao.atomicUpdateCatalog(newChannels)
 
             // Step 2: External audio sync
-            var audioCount = 0
+            var audioCount = audioDao.getAllAudio().first().size
             val audioUrl = session.externalAudioUrl
             if (!audioUrl.isNullOrBlank()) {
                 onProgress(SyncState.Syncing("Syncing external commentary...", 0.8f))
                 val audioResult = iptvProvider.fetchExternalAudio(audioUrl)
                 if (audioResult.isSuccess) {
                     val audioList = audioResult.getOrThrow()
-                    audioDao.atomicUpdateExternalAudio(audioList)
-                    audioCount = audioList.size
+                    // Never replace a working library with an empty/invalid result.
+                    // A failed audio sync must leave the previous library untouched.
+                    if (audioList.isNotEmpty()) {
+                        audioDao.atomicUpdateExternalAudio(audioList)
+                        audioCount = audioList.size
+                    }
                 }
             }
 
@@ -147,9 +152,15 @@ class ChannelRepository(
             val result = iptvProvider.fetchExternalAudio(audioUrl)
             if (result.isSuccess) {
                 val audioList = result.getOrThrow()
-                audioDao.atomicUpdateExternalAudio(audioList)
-                Result.success(audioList.size)
+                // Keep the existing library if the new feed is empty.
+                if (audioList.isEmpty()) {
+                    Result.failure(Exception("External audio library was empty; existing library preserved"))
+                } else {
+                    audioDao.atomicUpdateExternalAudio(audioList)
+                    Result.success(audioList.size)
+                }
             } else {
+                // Existing audio remains untouched on network/parser/backend failure.
                 Result.failure(result.exceptionOrNull() ?: Exception("Failed to sync external audio"))
             }
         } catch (e: Exception) {
