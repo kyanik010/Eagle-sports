@@ -166,103 +166,22 @@ Deno.serve(async (req: Request) => {
       return json({ subscriptions: data ?? [], total: count ?? 0, page, limit });
     }
 
-    if (action === "create_subscription") {
+    if (action === "update_subscription") {
       const username = String(body?.username ?? "").trim();
-      const password = String(body?.password ?? "");
-      const videoHostId = String(body?.video_host_id ?? "").trim();
       const audioM3u = String(body?.audio_m3u_url ?? "").trim();
-      const status = ["active", "suspended", "expired"].includes(body?.status) ? body.status : "active";
-      const expiresAt = body?.expires_at || null;
-      if (!username || username.length > 128 || !password || password.length > 256 || !videoHostId) {
-        return json({ error: "username_password_host_required" }, 400);
-      }
-      if (audioM3u) {
-        let audioUrl: URL;
-        try { audioUrl = new URL(audioM3u); } catch { return json({ error: "invalid_audio_url" }, 400); }
-        if (!["http:", "https:"].includes(audioUrl.protocol)) return json({ error: "invalid_audio_url" }, 400);
-      }
-      const { data: host, error: hostError } = await admin.from("video_profiles")
-        .select("id,name,enabled,server_url").eq("id", videoHostId)
-        .ilike("name", "HOST::%").maybeSingle();
-      if (hostError) throw hostError;
-      if (!host || !host.enabled || !host.server_url) return json({ error: "host_disabled_or_missing" }, 400);
-      const { data, error } = await admin.from("customer_subscriptions").insert({
-        username, password, status, expires_at: expiresAt, video_host_id: host.id,
-        audio_m3u_url: audioM3u || null, updated_at: new Date().toISOString(),
-      }).select("id,username,status,expires_at,video_host_id,audio_m3u_url,last_seen_at,created_at,updated_at").single();
-      if (error) {
-        if (error.code === "23505") return json({ error: "subscription_already_exists" }, 409);
-        throw error;
-      }
-      return json({ ok: true, subscription: data });
-    }
-
-    if (action === "create_subscription") {
-      const username = String(body?.username ?? "").trim();
-      const password = String(body?.password ?? "");
-      const hostId = String(body?.video_host_id ?? "").trim();
-      const audioM3u = String(body?.audio_m3u_url ?? "").trim();
-      const status = ["active", "suspended", "expired"].includes(body?.status) ? body.status : "active";
-      const expiresAt = body?.expires_at || null;
-      if (!username || username.length > 128 || !password || password.length > 256 || !hostId) {
-        return json({ error: "username_password_host_required" }, 400);
-      }
+      if (!username) return json({ error: "username_required" }, 400);
       if (audioM3u) {
         let parsed: URL;
         try { parsed = new URL(audioM3u); } catch { return json({ error: "invalid_audio_url" }, 400); }
         if (!["http:", "https:"].includes(parsed.protocol)) return json({ error: "invalid_audio_url" }, 400);
       }
-      const { data: host, error: hostError } = await admin.from("video_profiles")
-        .select("id,name,server_url,enabled").eq("id", hostId)
-        .ilike("name", "HOST::%").maybeSingle();
-      if (hostError) throw hostError;
-      if (!host || !host.enabled || !host.server_url) return json({ error: "host_disabled_or_missing" }, 400);
-      const { data, error } = await admin.from("customer_subscriptions").insert({
-        username, password, status, expires_at: expiresAt, video_host_id: host.id,
-        audio_m3u_url: audioM3u || null, updated_at: new Date().toISOString(),
-      }).select("id,username,password,status,expires_at,video_host_id,audio_m3u_url,last_seen_at,created_at,updated_at").single();
-      if (error) {
-        if (error.code === "23505") return json({ error: "subscription_already_exists" }, 409);
-        throw error;
-      }
-      return json({ ok: true, subscription: data });
-    }
-
-    if (action === "update_subscription") {
-      const username = String(body?.username ?? "").trim();
-      if (!username) return json({ error: "username_required" }, 400);
-      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (typeof body?.password === "string" && body.password.length > 0) patch.password = body.password;
-      if (["active", "suspended", "expired"].includes(body?.status)) patch.status = body.status;
-      if (Object.prototype.hasOwnProperty.call(body ?? {}, "expires_at")) patch.expires_at = body.expires_at || null;
-      if (Object.prototype.hasOwnProperty.call(body ?? {}, "audio_m3u_url")) {
-        const audioM3u = String(body?.audio_m3u_url ?? "").trim();
-        if (audioM3u) {
-          let parsed: URL;
-          try { parsed = new URL(audioM3u); } catch { return json({ error: "invalid_audio_url" }, 400); }
-          if (!["http:", "https:"].includes(parsed.protocol)) return json({ error: "invalid_audio_url" }, 400);
-        }
-        patch.audio_m3u_url = audioM3u || null;
-      }
-      if (Object.prototype.hasOwnProperty.call(body ?? {}, "video_host_id")) {
-        const hostId = String(body?.video_host_id ?? "").trim();
-        if (!hostId) {
-          patch.video_host_id = null;
-        } else {
-          const { data: host, error: hostError } = await admin.from("video_profiles")
-            .select("id,name,server_url,enabled").eq("id", hostId)
-            .ilike("name", "HOST::%").maybeSingle();
-          if (hostError) throw hostError;
-          if (!host || !host.enabled || !host.server_url) return json({ error: "host_disabled_or_missing" }, 400);
-          patch.video_host_id = host.id;
-        }
-      }
-      const { data, error } = await admin.from("customer_subscriptions").update(patch)
+      const { data, error } = await admin.from("customer_subscriptions")
+        .update({ audio_m3u_url: audioM3u || null, updated_at: new Date().toISOString() })
         .eq("username", username)
         .select("id,username,password,status,expires_at,video_host_id,audio_m3u_url,last_seen_at,created_at,updated_at")
         .maybeSingle();
       if (error) throw error;
-      if (!data) return json({ error: "subscription_not_found" }, 404);
+      if (!data) return json({ error: "customer_not_found" }, 404);
       return json({ ok: true, subscription: data });
     }
 
