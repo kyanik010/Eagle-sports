@@ -28,6 +28,7 @@ class ChannelRepository(
 ) {
 
     val allChannels: Flow<List<ChannelEntity>> = channelDao.getAllChannels()
+    val featuredChannels: Flow<List<ChannelEntity>> = channelDao.getFeaturedChannels()
     val favoriteChannels: Flow<List<ChannelEntity>> = channelDao.getFavoriteChannels()
     val allGroups: Flow<List<String>> = channelDao.getAllGroups()
     val totalCount: Flow<Int> = channelDao.getChannelCount()
