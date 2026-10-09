@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -173,7 +174,7 @@ fun ChannelsScreen(
                     state = groupListState,
                     modifier = Modifier
                         .width(148.dp)
-                        .fillMaxSize()
+                        .fillMaxHeight()
                         .background(NavyDark)
                         .testTag("channel_categories"),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
@@ -204,8 +205,8 @@ fun ChannelsScreen(
                 }
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
                         .weight(1f)
+                        .fillMaxHeight()
                 ) {
                     ChannelResults(
                         channels = channels,
