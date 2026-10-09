@@ -85,7 +85,7 @@ fun SettingsScreen(
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         sdf.format(Date(lastSync))
     } else {
-        "Never"
+        "لم تتم المزامنة"
     }
 
     Column(
@@ -109,12 +109,12 @@ fun SettingsScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = "رجوع",
                     tint = GoldPrimary
                 )
             }
             Text(
-                text = "Settings",
+                text = "الإعدادات",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = GoldPrimary
@@ -129,14 +129,14 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Section 1: Synchronization
-            SettingsSectionCard(title = "Synchronization", icon = Icons.Default.Sync) {
+            SettingsSectionCard(title = "المزامنة", icon = Icons.Default.Sync) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Last Sync", color = TextPrimary, fontWeight = FontWeight.Medium)
+                        Text("آخر مزامنة", color = TextPrimary, fontWeight = FontWeight.Medium)
                         Text(formattedSyncTime, color = TextMuted, style = MaterialTheme.typography.bodySmall)
                     }
                     Button(
@@ -149,7 +149,7 @@ fun SettingsScreen(
                             CircularProgressIndicator(modifier = Modifier.size(16.dp), color = NavyDeep, strokeWidth = 2.dp)
                             Spacer(modifier = Modifier.width(6.dp))
                         }
-                        Text("Sync Now", fontWeight = FontWeight.Bold)
+                        Text("مزامنة الآن", fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -163,14 +163,14 @@ fun SettingsScreen(
                 } else if (syncState is SyncState.Success) {
                     val s = syncState as SyncState.Success
                     Text(
-                        text = "Updated: ${s.channelsCount} channels, ${s.audioCount} commentary feeds",
+                        text = "تم التحديث: ${s.channelsCount} قناة، و${s.audioCount} مصدر تعليق صوتي",
                         color = if (s.warning == null) GreenLive else RedLive,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     s.warning?.let { warning ->
                         Text(
-                            text = "Commentary sync issue: $warning",
+                            text = "مشكلة في مزامنة التعليق الصوتي: $warning",
                             color = RedLive,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
@@ -178,7 +178,7 @@ fun SettingsScreen(
                     }
                 } else if (syncState is SyncState.Error) {
                     Text(
-                        text = "Sync error: ${(syncState as SyncState.Error).message}",
+                        text = "خطأ في المزامنة: ${(syncState as SyncState.Error).message}",
                         color = RedLive,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)
@@ -198,7 +198,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Sync Channels", color = TextPrimary, fontSize = 12.sp)
+                        Text("مزامنة القنوات", color = TextPrimary, fontSize = 12.sp)
                     }
                     Button(
                         onClick = { viewModel.syncAudioOnly() },
@@ -207,7 +207,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Sync Commentary", color = TextPrimary, fontSize = 12.sp)
+                        Text("مزامنة التعليق الصوتي", color = TextPrimary, fontSize = 12.sp)
                     }
                 }
 
@@ -223,60 +223,60 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = RedLive, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Rebuild / Clear Local Catalog", color = RedLive, fontSize = 13.sp)
+                    Text("إعادة بناء / مسح القائمة المحلية", color = RedLive, fontSize = 13.sp)
                 }
             }
 
             // Section 2: Playback Engine
-            SettingsSectionCard(title = "Playback Engine", icon = Icons.Default.PlayCircle) {
+            SettingsSectionCard(title = "محرك التشغيل", icon = Icons.Default.PlayCircle) {
                 SettingsSwitchRow(
-                    title = "Hardware Decoding",
-                    subtitle = "Low-latency hardware acceleration for HEVC/H.264",
+                    title = "فك الترميز عبر العتاد",
+                    subtitle = "تسريع عتادي بزمن استجابة منخفض لـ HEVC/H.264",
                     checked = hwDecoding,
                     onCheckedChange = { viewModel.toggleHwDecoding(it) }
                 )
                 SettingsSwitchRow(
-                    title = "Auto Reconnect",
-                    subtitle = "Automatically recover broken live connections",
+                    title = "إعادة الاتصال تلقائيًا",
+                    subtitle = "استعادة اتصال البث المباشر عند انقطاعه تلقائيًا",
                     checked = autoReconnect,
                     onCheckedChange = { viewModel.toggleAutoReconnect(it) }
                 )
                 SettingsSwitchRow(
-                    title = "Keep Screen Awake",
-                    subtitle = "Prevent device sleep during stream playback",
+                    title = "إبقاء الشاشة قيد التشغيل",
+                    subtitle = "منع الجهاز من الدخول في وضع السكون أثناء البث",
                     checked = keepScreenOn,
                     onCheckedChange = { viewModel.toggleKeepScreenOn(it) }
                 )
             }
 
             // Section 3: Channels Display
-            SettingsSectionCard(title = "Channels Display", icon = Icons.Default.Tv) {
+            SettingsSectionCard(title = "عرض القنوات", icon = Icons.Default.Tv) {
                 SettingsSwitchRow(
-                    title = "Favorites First",
-                    subtitle = "Always list starred channels at the top",
+                    title = "المفضلة أولًا",
+                    subtitle = "عرض القنوات المفضلة في أعلى القائمة دائمًا",
                     checked = favoritesFirst,
                     onCheckedChange = { viewModel.toggleFavoritesFirst(it) }
                 )
                 SettingsSwitchRow(
-                    title = "Show Logos",
-                    subtitle = "Display official channel logos in listings",
+                    title = "إظهار الشعارات",
+                    subtitle = "عرض شعارات القنوات في القوائم",
                     checked = showLogos,
                     onCheckedChange = { viewModel.toggleShowLogos(it) }
                 )
                 SettingsSwitchRow(
-                    title = "Show Channel Numbers",
-                    subtitle = "Display numeric channel indexing",
+                    title = "إظهار أرقام القنوات",
+                    subtitle = "عرض أرقام القنوات بجانب أسمائها",
                     checked = showNumbers,
                     onCheckedChange = { viewModel.toggleShowNumbers(it) }
                 )
             }
 
             // Section 4: Account & Device Info
-            SettingsSectionCard(title = "Account & Device", icon = Icons.Default.AccountCircle) {
-                InfoRow(label = "Username", value = session?.username ?: "Guest")
-                InfoRow(label = "Status", value = session?.status ?: "Active")
-                InfoRow(label = "Expiry Date", value = session?.expiryDate ?: "Never")
-                InfoRow(label = "Device", value = "${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE})")
+            SettingsSectionCard(title = "الحساب والجهاز", icon = Icons.Default.AccountCircle) {
+                InfoRow(label = "اسم المستخدم", value = session?.username ?: "ضيف")
+                InfoRow(label = "الحالة", value = session?.status ?: "نشط")
+                InfoRow(label = "تاريخ الانتهاء", value = session?.expiryDate ?: "لم تتم المزامنة")
+                InfoRow(label = "الجهاز", value = "${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE})")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -292,7 +292,7 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Default.ExitToApp, contentDescription = null, tint = RedLive)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Logout & Clear Sensitive Session", fontWeight = FontWeight.Bold)
+                    Text("تسجيل الخروج ومسح بيانات الجلسة", fontWeight = FontWeight.Bold)
                 }
             }
 
