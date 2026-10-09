@@ -34,11 +34,11 @@ class AuthViewModel(
         val enteredPass = pass
 
         if (trimmedUser.isEmpty()) {
-            _uiState.value = LoginUiState.Error("Please enter your Username")
+            _uiState.value = LoginUiState.Error("يرجى إدخال اسم المستخدم")
             return
         }
         if (enteredPass.isBlank()) {
-            _uiState.value = LoginUiState.Error("Please enter your Password")
+            _uiState.value = LoginUiState.Error("يرجى إدخال كلمة المرور")
             return
         }
 
@@ -55,7 +55,7 @@ class AuthViewModel(
                 channelRepository.syncAll()
                 _uiState.value = LoginUiState.Success
             } else {
-                val err = result.exceptionOrNull()?.message ?: "Authentication failed"
+                val err = result.exceptionOrNull()?.message ?: "فشل تسجيل الدخول"
                 _uiState.value = LoginUiState.Error(err)
             }
         }
