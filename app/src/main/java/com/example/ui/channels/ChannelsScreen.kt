@@ -166,7 +166,7 @@ fun ChannelsScreen(
 
         // Groups Filter (only in Channels view)
         if (!isFavoritesOnly && groups.isNotEmpty()) {
-            val allGroupsList = listOf("الكل") + groups
+            val allGroupsList = listOf("All") + groups
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,7 +181,7 @@ fun ChannelsScreen(
                         onClick = { viewModel.selectGroup(group) },
                         label = {
                             Text(
-                                text = group,
+                                text = if (group == "All") "الكل" else group,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) NavyDeep else TextSecondary
                             )
