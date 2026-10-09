@@ -164,10 +164,18 @@ fun SettingsScreen(
                     val s = syncState as SyncState.Success
                     Text(
                         text = "Updated: ${s.channelsCount} channels, ${s.audioCount} commentary feeds",
-                        color = GreenLive,
+                        color = if (s.warning == null) GreenLive else RedLive,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)
                     )
+                    s.warning?.let { warning ->
+                        Text(
+                            text = "Commentary sync issue: $warning",
+                            color = RedLive,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 } else if (syncState is SyncState.Error) {
                     Text(
                         text = "Sync error: ${(syncState as SyncState.Error).message}",
