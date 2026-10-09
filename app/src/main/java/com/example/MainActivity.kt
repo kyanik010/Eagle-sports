@@ -122,7 +122,7 @@ fun EagleSportsAppContent() {
                 HomeScreen(
                     channelCount = totalChannels,
                     favoriteCount = favoritesList.size,
-                    username = userSession?.username ?: "Sports Member",
+                    username = userSession?.username ?: "مشترك رياضي",
                     onNavigateChannels = {
                         backStack.add(AppDestination.Channels(isFavorites = false))
                     },
