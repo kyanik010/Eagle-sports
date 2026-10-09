@@ -135,7 +135,7 @@ fun HomeScreen(
                             EmptyChannelsHint()
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                featuredChannels.forEach { channel ->
+                                featuredChannels.take(6).forEach { channel ->
                                     FeaturedChannelCard(
                                         channel = channel,
                                         modifier = Modifier.fillMaxWidth().height(62.dp),
