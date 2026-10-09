@@ -141,7 +141,7 @@ fun HomeScreen(
 
                     Column {
                         Text(
-                            text = "Eagle Sports",
+                            text = "إيغل سبورتس",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 color = GoldPrimary,
