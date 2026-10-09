@@ -170,7 +170,10 @@ class DefaultIptvProvider(
                     )
                 }
 
-                val channels = parseXtreamChannels(body, session)
+                // Xtream live streams often contain only category_id, not category_name.
+                // Fetch the subscription's real category list and map IDs to display names.
+                val categories = fetchLiveCategories(host, user, pass)
+                val channels = parseXtreamChannels(body, session, categories)
                 if (channels.isEmpty()) {
                     Result.failure(IllegalStateException("IPTV API returned 0 live channels"))
                 } else {
@@ -227,9 +230,43 @@ class DefaultIptvProvider(
         }
     }
 
+    private fun fetchLiveCategories(
+        host: String,
+        encodedUser: String,
+        encodedPass: String
+    ): Map<String, String> {
+        val url = "$host/player_api.php?username=$encodedUser&password=$encodedPass&action=get_live_categories"
+        return try {
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", USER_AGENT)
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use emptyMap<String, String>()
+                val body = response.body?.string().orEmpty()
+                if (!body.trim().startsWith("[")) return@use emptyMap<String, String>()
+                val categories = JSONArray(body)
+                buildMap {
+                    for (i in 0 until categories.length()) {
+                        val item = categories.optJSONObject(i) ?: continue
+                        val id = item.optString("category_id").trim()
+                        val name = item.optString("category_name").trim()
+                        if (id.isNotBlank() && name.isNotBlank() && name != "null") {
+                            put(id, name)
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // Keep channel synchronization usable if the provider does not expose categories.
+            emptyMap()
+        }
+    }
+
     private fun parseXtreamChannels(
         jsonStr: String,
-        session: UserSession
+        session: UserSession,
+        categories: Map<String, String>
     ): List<ChannelEntity> {
         val list = mutableListOf<ChannelEntity>()
         val jsonArray = JSONArray(jsonStr)
@@ -242,7 +279,13 @@ class DefaultIptvProvider(
             val streamId = obj.optInt("stream_id", i + 1)
             val name = obj.optString("name", "Channel ${streamId}")
             val icon = obj.optString("stream_icon").ifBlank { null }
-            val category = obj.optString("category_name").ifBlank { "Sports" }
+            val categoryId = obj.optString("category_id").trim()
+            val embeddedCategory = obj.optString("category_name").trim()
+                .takeIf { it.isNotBlank() && it != "null" }
+            val category = categories[categoryId]
+                ?: embeddedCategory
+                ?: categoryId.takeIf { it.isNotBlank() && it != "null" }?.let { "تصنيف $it" }
+                ?: "غير مصنف"
             val channelNumber = obj.optInt("num", i + 1)
             val streamUrl = "${host}/live/${user}/${pass}/${streamId}.ts"
             val tvgId = obj.optString("epg_channel_id").ifBlank { null }
