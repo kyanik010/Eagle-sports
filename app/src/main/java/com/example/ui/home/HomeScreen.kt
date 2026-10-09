@@ -131,7 +131,7 @@ fun HomeScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.eagle_sports_icon),
-                            contentDescription = "Eagle Sports Logo",
+                            contentDescription = "شعار إيغل سبورتس",
                             modifier = Modifier.size(46.dp),
                             contentScale = ContentScale.Crop
                         )
@@ -157,7 +157,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "LIVE TV • $username",
+                                text = "البث المباشر • $username",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = TextSecondary,
                                     fontWeight = FontWeight.Medium
@@ -178,8 +178,8 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 HomeMenuCard(
-                    title = "Channels",
-                    subtitle = "$channelCount Available Live Streams",
+                    title = "القنوات",
+                    subtitle = "$channelCount قناة بث مباشر متاحة",
                     icon = Icons.Default.LiveTv,
                     accentColor = GoldPrimary,
                     testTag = "menu_channels",
@@ -187,8 +187,8 @@ fun HomeScreen(
                 )
 
                 HomeMenuCard(
-                    title = "Favorites",
-                    subtitle = "$favoriteCount Saved Pinned Channels",
+                    title = "المفضلة",
+                    subtitle = "$favoriteCount قناة محفوظة في المفضلة",
                     icon = Icons.Default.Star,
                     accentColor = CyanAccent,
                     testTag = "menu_favorites",
@@ -196,8 +196,8 @@ fun HomeScreen(
                 )
 
                 HomeMenuCard(
-                    title = "Settings",
-                    subtitle = "Playback, Audio Engines & Sync",
+                    title = "الإعدادات",
+                    subtitle = "التشغيل والصوت والمزامنة",
                     icon = Icons.Default.Settings,
                     accentColor = TextSecondary,
                     testTag = "menu_settings",
@@ -209,7 +209,7 @@ fun HomeScreen(
 
             // Footer info
             Text(
-                text = "Eagle Sports Live IPTV Platform • Multi-Engine Core",
+                text = "منصة إيغل سبورتس للبث المباشر • نظام تشغيل متعدد",
                 style = MaterialTheme.typography.labelSmall.copy(
                     color = TextMuted,
                     letterSpacing = 0.5.sp
