@@ -78,6 +78,7 @@ fun EagleSportsAppContent() {
     val userSession by preferencesManager.userSession.collectAsState(initial = null)
     val totalChannels by repository.totalCount.collectAsState(initial = 0)
     val favoritesList by repository.favoriteChannels.collectAsState(initial = emptyList())
+    val featuredChannels by repository.featuredChannels.collectAsState(initial = emptyList())
 
     // Backstack navigation management
     val backStack = remember { mutableStateListOf<AppDestination>(AppDestination.Home) }
@@ -123,6 +124,8 @@ fun EagleSportsAppContent() {
                     channelCount = totalChannels,
                     favoriteCount = favoritesList.size,
                     username = userSession?.username ?: "مشترك رياضي",
+                    featuredChannels = featuredChannels,
+                    onFeaturedChannelSelected = { channel -> backStack.add(AppDestination.Player(channel)) },
                     onNavigateChannels = {
                         backStack.add(AppDestination.Channels(isFavorites = false))
                     },
