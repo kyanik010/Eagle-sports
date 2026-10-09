@@ -55,24 +55,24 @@ class SettingsViewModel(
 
     fun syncChannelsOnly() {
         viewModelScope.launch {
-            _syncState.value = SyncState.Syncing("Syncing channels only...")
+            _syncState.value = SyncState.Syncing("جارٍ مزامنة القنوات فقط...")
             val result = repository.syncChannelsOnly()
             if (result.isSuccess) {
                 _syncState.value = SyncState.Success(result.getOrDefault(0), 0)
             } else {
-                _syncState.value = SyncState.Error(result.exceptionOrNull()?.message ?: "Failed")
+                _syncState.value = SyncState.Error(result.exceptionOrNull()?.message ?: "فشلت العملية")
             }
         }
     }
 
     fun syncAudioOnly() {
         viewModelScope.launch {
-            _syncState.value = SyncState.Syncing("Syncing external commentary...")
+            _syncState.value = SyncState.Syncing("جارٍ مزامنة التعليق الصوتي الخارجي...")
             val result = repository.syncExternalAudioOnly()
             if (result.isSuccess) {
                 _syncState.value = SyncState.Success(0, result.getOrDefault(0))
             } else {
-                _syncState.value = SyncState.Error(result.exceptionOrNull()?.message ?: "Failed")
+                _syncState.value = SyncState.Error(result.exceptionOrNull()?.message ?: "فشلت العملية")
             }
         }
     }
