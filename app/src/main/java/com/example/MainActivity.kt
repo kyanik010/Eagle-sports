@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -95,6 +96,12 @@ fun EagleSportsAppContent() {
         }
     }
 
+    // Keep the channels screen state alive while the player/settings are on top.
+    // This preserves the selected category and both list scroll positions on back.
+    val channelsViewModel = remember { ChannelsViewModel(repository, preferencesManager) }
+    val channelListState = rememberLazyListState()
+    val groupListState = rememberLazyListState()
+
     // Custom back handling to maintain stack integrity
     BackHandler(enabled = backStack.size > 1) {
         backStack.removeAt(backStack.lastIndex)
@@ -139,9 +146,6 @@ fun EagleSportsAppContent() {
             }
 
             is AppDestination.Channels -> {
-                val channelsViewModel = remember {
-                    ChannelsViewModel(repository, preferencesManager)
-                }
                 ChannelsScreen(
                     viewModel = channelsViewModel,
                     isFavoritesOnly = destination.isFavorites,
@@ -150,7 +154,9 @@ fun EagleSportsAppContent() {
                     },
                     onBack = {
                         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-                    }
+                    },
+                    channelListState = channelListState,
+                    groupListState = groupListState
                 )
             }
 
