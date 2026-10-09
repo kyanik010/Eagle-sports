@@ -20,9 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,8 +33,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +43,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,7 +70,9 @@ fun ChannelsScreen(
     viewModel: ChannelsViewModel,
     isFavoritesOnly: Boolean = false,
     onChannelSelected: (ChannelEntity) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    channelListState: LazyListState,
+    groupListState: LazyListState
 ) {
     val channels by if (isFavoritesOnly) viewModel.favoriteChannels.collectAsState() else viewModel.channels.collectAsState()
     val groups by viewModel.groups.collectAsState()
@@ -84,7 +82,6 @@ fun ChannelsScreen(
     val showLogos by viewModel.showLogos.collectAsState()
     val showNumbers by viewModel.showNumbers.collectAsState()
 
-    val listState = rememberLazyListState()
 
     Column(
         modifier = Modifier
@@ -163,92 +160,132 @@ fun ChannelsScreen(
             )
         )
 
-        // Groups Filter (only in Channels view)
-        if (!isFavoritesOnly && groups.isNotEmpty()) {
-            val allGroupsList = listOf("All") + groups
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(allGroupsList) { group ->
-                    val isSelected = (group == selectedGroup)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.selectGroup(group) },
-                        label = {
+        // Vertical category sidebar. Keeping this state in MainActivity preserves
+        // the category scroll position when returning from the player.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            if (!isFavoritesOnly && groups.isNotEmpty()) {
+                val allGroupsList = listOf("All") + groups
+                LazyColumn(
+                    state = groupListState,
+                    modifier = Modifier
+                        .width(148.dp)
+                        .fillMaxSize()
+                        .background(NavyDark)
+                        .testTag("channel_categories"),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(allGroupsList, key = { it }) { group ->
+                        val isSelected = group == selectedGroup
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) GoldPrimary else NavySurface)
+                                .clickable { viewModel.selectGroup(group) }
+                                .padding(horizontal = 10.dp, vertical = 13.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
                                 text = if (group == "All") "الكل" else group,
+                                color = if (isSelected) NavyDeep else TextPrimary,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) NavyDeep else TextSecondary
+                                fontSize = 13.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = GoldPrimary,
-                            containerColor = NavySurface
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = if (isSelected) GoldPrimary else NavyBorder
-                        )
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                ) {
+                    ChannelResults(
+                        channels = channels,
+                        isFavoritesOnly = false,
+                        listState = channelListState,
+                        showLogos = showLogos,
+                        showNumbers = showNumbers,
+                        onChannelSelected = onChannelSelected,
+                        onToggleFavorite = { viewModel.toggleFavorite(it) }
                     )
                 }
+            } else {
+                ChannelResults(
+                    channels = channels,
+                    isFavoritesOnly = isFavoritesOnly,
+                    listState = channelListState,
+                    showLogos = showLogos,
+                    showNumbers = showNumbers,
+                    onChannelSelected = onChannelSelected,
+                    onToggleFavorite = { viewModel.toggleFavorite(it) }
+                )
             }
         }
+    }
+}
 
-        // Fast Channels Lazy List
-        if (channels.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = if (isFavoritesOnly) Icons.Default.Star else Icons.Default.LiveTv,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.size(56.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = if (isFavoritesOnly) "لم تُضف أي قنوات إلى المفضلة بعد" else "لم يتم العثور على قنوات",
-                        style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary),
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = if (isFavoritesOnly) "اضغط على رمز النجمة بجانب أي قناة لإضافتها إلى هنا" else "جرّب مسح البحث أو مزامنة القنوات من الإعدادات",
-                        style = MaterialTheme.typography.bodySmall.copy(color = TextMuted)
-                    )
-                }
+
+@Composable
+private fun ChannelResults(
+    channels: List<ChannelEntity>,
+    isFavoritesOnly: Boolean,
+    listState: LazyListState,
+    showLogos: Boolean,
+    showNumbers: Boolean,
+    onChannelSelected: (ChannelEntity) -> Unit,
+    onToggleFavorite: (String) -> Unit
+) {
+    if (channels.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = if (isFavoritesOnly) Icons.Default.Star else Icons.Default.LiveTv,
+                    contentDescription = null,
+                    tint = TextMuted,
+                    modifier = Modifier.size(56.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (isFavoritesOnly) "لم تُضف أي قنوات إلى المفضلة بعد" else "لم يتم العثور على قنوات",
+                    style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary),
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = if (isFavoritesOnly) "اضغط على رمز النجمة بجانب أي قناة لإضافتها إلى هنا" else "جرّب مسح البحث أو مزامنة القنوات من الإعدادات",
+                    style = MaterialTheme.typography.bodySmall.copy(color = TextMuted)
+                )
             }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .testTag("channels_list"),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = channels,
-                    key = { it.stableId }
-                ) { channel ->
-                    ChannelListItem(
-                        channel = channel,
-                        showLogo = showLogos,
-                        showNumber = showNumbers,
-                        onClick = { onChannelSelected(channel) },
-                        onToggleFavorite = { viewModel.toggleFavorite(channel.stableId) }
-                    )
-                }
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("channels_list"),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(items = channels, key = { it.stableId }) { channel ->
+                ChannelListItem(
+                    channel = channel,
+                    showLogo = showLogos,
+                    showNumber = showNumbers,
+                    onClick = { onChannelSelected(channel) },
+                    onToggleFavorite = { onToggleFavorite(channel.stableId) }
+                )
             }
         }
     }
