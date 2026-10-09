@@ -71,10 +71,10 @@ class ExternalAudioEngine(
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                1000, // minBufferMs: keep the audio startup buffer small
-                3000, // maxBufferMs: cap the target audio buffer at 3 seconds
-                250,  // bufferForPlaybackMs: start as soon as a short buffer is available
-                500   // bufferForPlaybackAfterRebufferMs: recover quickly after stalls
+                5000,  // minBufferMs: keep several seconds buffered to absorb network jitter
+                20000, // maxBufferMs: allow a larger reserve for unstable live audio sources
+                1500,  // bufferForPlaybackMs: avoid starting with an extremely small buffer
+                4000   // bufferForPlaybackAfterRebufferMs: reduce repeated stalls after buffering
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
