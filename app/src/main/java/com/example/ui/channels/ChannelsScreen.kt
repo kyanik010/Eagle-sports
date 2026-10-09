@@ -107,13 +107,13 @@ fun ChannelsScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = "رجوع",
                     tint = GoldPrimary
                 )
             }
 
             Text(
-                text = if (isFavoritesOnly) "Favorites" else "Live Channels",
+                text = if (isFavoritesOnly) "المفضلة" else "القنوات المباشرة",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = GoldPrimary
@@ -128,7 +128,7 @@ fun ChannelsScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort",
+                    contentDescription = "ترتيب",
                     tint = if (sortOrder == ChannelSortOrder.NAME) CyanAccent else TextSecondary
                 )
             }
@@ -138,14 +138,14 @@ fun ChannelsScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.onSearchQueryChanged(it) },
-            placeholder = { Text("Search channel name or number...", color = TextMuted) },
+            placeholder = { Text("ابحث باسم القناة أو رقمها...", color = TextMuted) },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = GoldPrimary)
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = TextSecondary)
+                        Icon(Icons.Default.Clear, contentDescription = "مسح", tint = TextSecondary)
                     }
                 }
             },
@@ -166,7 +166,7 @@ fun ChannelsScreen(
 
         // Groups Filter (only in Channels view)
         if (!isFavoritesOnly && groups.isNotEmpty()) {
-            val allGroupsList = listOf("All") + groups
+            val allGroupsList = listOf("الكل") + groups
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -218,12 +218,12 @@ fun ChannelsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = if (isFavoritesOnly) "No favorite channels added yet" else "No channels found",
+                        text = if (isFavoritesOnly) "لم تُضف أي قنوات إلى المفضلة بعد" else "لم يتم العثور على قنوات",
                         style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary),
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = if (isFavoritesOnly) "Click the star icon on any channel to pin it here" else "Try clearing the search or syncing channels in Settings",
+                        text = if (isFavoritesOnly) "اضغط على رمز النجمة بجانب أي قناة لإضافتها إلى هنا" else "جرّب مسح البحث أو مزامنة القنوات من الإعدادات",
                         style = MaterialTheme.typography.bodySmall.copy(color = TextMuted)
                     )
                 }
@@ -315,7 +315,7 @@ fun ChannelListItem(
                     if (!channel.logoUrl.isNullOrBlank()) {
                         AsyncImage(
                             model = channel.logoUrl,
-                            contentDescription = "${channel.name} Logo",
+                            contentDescription = "شعار ${channel.name}",
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.size(38.dp)
                         )
@@ -361,7 +361,7 @@ fun ChannelListItem(
             ) {
                 Icon(
                     imageVector = if (channel.isFavorite) Icons.Default.Star else Icons.Outlined.StarOutline,
-                    contentDescription = if (channel.isFavorite) "Remove from favorites" else "Add to favorites",
+                    contentDescription = if (channel.isFavorite) "إزالة من المفضلة" else "إضافة إلى المفضلة",
                     tint = if (channel.isFavorite) GoldPrimary else TextMuted
                 )
             }
