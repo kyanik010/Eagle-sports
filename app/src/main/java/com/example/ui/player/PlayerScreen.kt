@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -114,6 +115,7 @@ fun PlayerScreen(
 
     var showControls by remember { mutableStateOf(true) }
     var showMoreSheet by remember { mutableStateOf(false) }
+    var showDelayControls by remember { mutableStateOf(false) }
     var isFullscreen by remember { mutableStateOf(false) }
 
     LaunchedEffect(channel.stableId) {
@@ -483,34 +485,52 @@ fun PlayerScreen(
             }
         }
 
-        // More & Audio Options BottomSheet
+        // Compact audio source sheet: keep channel choices prominent and delay tools collapsed.
         if (showMoreSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showMoreSheet = false },
                 sheetState = rememberModalBottomSheetState(),
                 containerColor = NavyDark,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text(
-                        text = "مصدر الصوت والتعليق",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = GoldPrimary
-                        )
-                    )
-                    Text(
-                        text = "مشغل صوت مزدوج مستقل دون مقاطعة الفيديو",
-                        style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "مصدر الصوت والتعليق",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = GoldPrimary
+                                )
+                            )
+                            Text(
+                                text = "اختر صوت البث أو التعليق الخارجي",
+                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                            )
+                        }
+                        Surface(
+                            color = NavySurface,
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, NavyBorder)
+                        ) {
+                            Text(
+                                text = "${availableAudioTracks.size} مصدر",
+                                color = CyanAccent,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Option 1: Original Audio
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -519,73 +539,86 @@ fun PlayerScreen(
                                 viewModel.selectOriginalAudio()
                                 showMoreSheet = false
                             },
-                        color = if (audioMode is AudioSourceMode.Original) NavySurfaceVariant() else NavySurface
+                        color = if (audioMode is AudioSourceMode.Original) NavySurfaceVariant() else NavySurface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (audioMode is AudioSourceMode.Original) GoldPrimary.copy(alpha = 0.7f) else NavyBorder
+                        )
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Audiotrack, contentDescription = null, tint = GoldPrimary)
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Icon(Icons.Default.Audiotrack, contentDescription = null, tint = GoldPrimary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("صوت البث الأصلي", color = TextPrimary, fontWeight = FontWeight.Bold)
-                                Text("الصوت المضمّن في البث مباشرةً", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                Text("صوت البث الأصلي", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                Text("الصوت المضمّن في البث", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                             if (audioMode is AudioSourceMode.Original) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = GoldPrimary)
+                                Icon(Icons.Default.Check, contentDescription = "محدد", tint = GoldPrimary, modifier = Modifier.size(19.dp))
                             }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // External Audio Tracks
                     Text(
-                        text = "التعليق الرياضي الخارجي (${availableAudioTracks.size} مصدر متاح)",
-                        style = MaterialTheme.typography.labelMedium.copy(color = CyanAccent)
+                        text = "التعليق الرياضي الخارجي",
+                        style = MaterialTheme.typography.labelLarge.copy(color = CyanAccent, fontWeight = FontWeight.SemiBold)
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     if (availableAudioTracks.isEmpty()) {
-                        Text(
-                            text = "لم يتم العثور على مصادر صوت خارجي مطابقة لهذه القناة.",
-                            color = TextMuted,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Surface(
+                            color = NavySurface,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "لا توجد مصادر تعليق مطابقة لهذه القناة.",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     } else {
                         LazyColumn(
-                            modifier = Modifier.height(160.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.heightIn(max = 132.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             items(availableAudioTracks) { track ->
                                 val isSelected = (audioMode as? AudioSourceMode.External)?.audioId == track.stableId
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .clickable {
                                             viewModel.selectExternalAudio(track)
                                             showMoreSheet = false
                                         },
-                                    color = if (isSelected) NavySurfaceVariant() else NavySurface
+                                    color = if (isSelected) NavySurfaceVariant() else NavySurface,
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isSelected) CyanAccent.copy(alpha = 0.65f) else NavyBorder
+                                    )
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(14.dp),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.Headphones, contentDescription = null, tint = CyanAccent)
-                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Icon(Icons.Default.Headphones, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(19.dp))
+                                        Spacer(modifier = Modifier.width(10.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(track.title, color = TextPrimary, fontWeight = FontWeight.Medium)
+                                            Text(track.title, color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 1)
                                             Text(
-                                                "${track.commentator ?: "Commentator"} • ${track.bitrate ?: "320 kbps"}",
+                                                "${track.commentator ?: "معلق خارجي"} • ${track.bitrate ?: "320 kbps"}",
                                                 color = TextSecondary,
-                                                style = MaterialTheme.typography.bodySmall
+                                                style = MaterialTheme.typography.labelSmall,
+                                                maxLines = 1
                                             )
                                         }
                                         if (isSelected) {
-                                            Icon(Icons.Default.Check, contentDescription = null, tint = CyanAccent)
+                                            Icon(Icons.Default.Check, contentDescription = "محدد", tint = CyanAccent, modifier = Modifier.size(18.dp))
                                         }
                                     }
                                 }
@@ -593,70 +626,87 @@ fun PlayerScreen(
                         }
                     }
 
-                    // Audio Delay Controls (only active when External Audio is selected)
                     if (audioMode is AudioSourceMode.External) {
-                        Spacer(modifier = Modifier.height(18.dp))
-                        Text(
-                            text = "تأخير الصوت يدويًا: ${audioDelayMs} مللي ثانية (من ‎-3000 إلى ‎+3000 مللي ثانية)",
-                            style = MaterialTheme.typography.labelLarge.copy(color = GoldPrimary, fontWeight = FontWeight.Bold)
-                        )
-                        Row(
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { showDelayControls = !showDelayControls },
+                            color = NavySurface,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, NavyBorder)
                         ) {
-                            IconButton(
-                                onClick = { viewModel.adjustAudioDelay(-100) },
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(NavySurface)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Remove, contentDescription = "‎-100 مللي ثانية", tint = GoldPrimary)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("ضبط تأخير الصوت", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("تعديل يدوي من ‎−3000 إلى ‎+3000 مللي ثانية", color = TextMuted, style = MaterialTheme.typography.labelSmall)
+                                }
+                                Surface(color = NavyDark, shape = RoundedCornerShape(8.dp)) {
+                                    Text(
+                                        "${audioDelayMs} ms",
+                                        color = GoldPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = if (showDelayControls) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (showDelayControls) "إخفاء ضبط التأخير" else "إظهار ضبط التأخير",
+                                    tint = GoldPrimary
+                                )
                             }
-                            Text("‎-100 مللي ثانية", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
-
-                            IconButton(
-                                onClick = { viewModel.adjustAudioDelay(-50) },
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(NavySurface)
+                        }
+                        if (showDelayControls) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("-50", color = CyanAccent, fontWeight = FontWeight.Bold)
+                                DelayStepButton("−100", enabled = audioDelayMs > -3000, onClick = { viewModel.adjustAudioDelay(-100) }, modifier = Modifier.weight(1f))
+                                DelayStepButton("−50", enabled = audioDelayMs > -3000, onClick = { viewModel.adjustAudioDelay(-50) }, modifier = Modifier.weight(1f))
+                                DelayStepButton("+50", enabled = audioDelayMs < 3000, onClick = { viewModel.adjustAudioDelay(50) }, modifier = Modifier.weight(1f))
+                                DelayStepButton("+100", enabled = audioDelayMs < 3000, onClick = { viewModel.adjustAudioDelay(100) }, modifier = Modifier.weight(1f))
                             }
-
-                            Text(
-                                "${audioDelayMs} مللي ثانية",
-                                color = GoldPrimary,
-                                fontWeight = FontWeight.ExtraBold,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            IconButton(
-                                onClick = { viewModel.adjustAudioDelay(50) },
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(NavySurface)
-                            ) {
-                                Text("+50", color = CyanAccent, fontWeight = FontWeight.Bold)
-                            }
-
-                            IconButton(
-                                onClick = { viewModel.adjustAudioDelay(100) },
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(NavySurface)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "‎+100 مللي ثانية", tint = GoldPrimary)
-                            }
-                            Text("‎+100 مللي ثانية", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun DelayStepButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(9.dp))
+            .clickable(enabled = enabled, onClick = onClick),
+        color = if (enabled) NavySurface else NavyDark,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (enabled) NavyBorder else NavyBorder.copy(alpha = 0.4f))
+    ) {
+        Box(
+            modifier = Modifier.padding(vertical = 9.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                color = if (enabled) CyanAccent else TextMuted,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMedium
+            )
         }
     }
 }
