@@ -85,7 +85,9 @@ class PreferencesManager(private val context: Context) {
             prefs[KEY_IPTV_HOST] = session.iptvHost
             prefs[KEY_SUB_STATUS] = session.status
             prefs[KEY_EXPIRY_DATE] = session.expiryDate
-            session.externalAudioUrl?.let { prefs[KEY_EXTERNAL_AUDIO_URL] = it }
+            session.externalAudioUrl?.takeIf { it.isNotBlank() }?.let {
+                prefs[KEY_EXTERNAL_AUDIO_URL] = it
+            } ?: prefs.remove(KEY_EXTERNAL_AUDIO_URL)
         }
     }
 
