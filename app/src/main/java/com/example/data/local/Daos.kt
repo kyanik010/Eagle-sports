@@ -15,6 +15,9 @@ interface ChannelDao {
     @Query("SELECT * FROM channels ORDER BY channelNumber ASC, name ASC")
     fun getAllChannels(): Flow<List<ChannelEntity>>
 
+    @Query("SELECT * FROM channels ORDER BY channelNumber ASC, name ASC LIMIT 3")
+    fun getFeaturedChannels(): Flow<List<ChannelEntity>>
+
     @Query("SELECT * FROM channels WHERE isFavorite = 1 ORDER BY channelNumber ASC, name ASC")
     fun getFavoriteChannels(): Flow<List<ChannelEntity>>
 
