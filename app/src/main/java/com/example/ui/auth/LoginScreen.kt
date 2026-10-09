@@ -149,7 +149,7 @@ fun LoginScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.eagle_sports_icon),
-                            contentDescription = "Eagle Sports Logo",
+                            contentDescription = "شعار إيغل سبورتس",
                             modifier = Modifier.size(70.dp),
                             contentScale = ContentScale.Crop
                         )
@@ -168,7 +168,7 @@ fun LoginScreen(
                     )
 
                     Text(
-                        text = "Live Sports IPTV & External Commentary",
+                        text = "بث رياضي مباشر وتعليق صوتي خارجي",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = TextSecondary
                         ),
@@ -184,8 +184,8 @@ fun LoginScreen(
                             username = it
                             if (uiState is LoginUiState.Error) viewModel.clearError()
                         },
-                        label = { Text("Username") },
-                        placeholder = { Text("Enter your account username") },
+                        label = { Text("اسم المستخدم") },
+                        placeholder = { Text("أدخل اسم المستخدم لحسابك") },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null, tint = GoldPrimary)
                         },
@@ -221,8 +221,8 @@ fun LoginScreen(
                             password = it
                             if (uiState is LoginUiState.Error) viewModel.clearError()
                         },
-                        label = { Text("Password") },
-                        placeholder = { Text("Enter your password") },
+                        label = { Text("كلمة المرور") },
+                        placeholder = { Text("أدخل كلمة المرور") },
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = GoldPrimary)
                         },
@@ -230,7 +230,7 @@ fun LoginScreen(
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                    contentDescription = if (passwordVisible) "إخفاء كلمة المرور" else "إظهار كلمة المرور",
                                     tint = TextSecondary
                                 )
                             }
@@ -301,7 +301,7 @@ fun LoginScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                "Authenticating...",
+                                "جارٍ التحقق من البيانات...",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         } else {
@@ -312,7 +312,7 @@ fun LoginScreen(
                                 Icon(Icons.Default.SportsSoccer, contentDescription = null, tint = NavyDeep)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Login",
+                                    "تسجيل الدخول",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -322,7 +322,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Automated Host & Subscription Provisioning",
+                        text = "إدارة الخادم والاشتراك تلقائيًا",
                         style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
                     )
                 }
