@@ -52,8 +52,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         dualPlayerController.playChannel(channel)
         viewModelScope.launch {
             preferencesManager.setLastChannelId(channel.stableId)
-            // Query matched external commentary for this channel
-            val tracks = repository.getExternalAudioForChannel(channel)
+            // Show the complete external-audio M3U catalog. Audio channel names often differ
+            // from the video channel name, so filtering by the current video channel hides valid tracks.
+            val tracks = repository.getAllExternalAudio()
             _availableAudioTracks.value = tracks
         }
     }
