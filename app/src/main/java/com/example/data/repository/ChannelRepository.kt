@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 sealed class SyncState {
     object Idle : SyncState()
     data class Syncing(val message: String, val progress: Float = 0f) : SyncState()
-    data class Success(val channelsCount: Int, val audioCount: Int) : SyncState()
+    data class Success(val channelsCount: Int, val audioCount: Int, val warning: String? = null) : SyncState()
     data class Error(val message: String) : SyncState()
 }
 
@@ -105,6 +105,25 @@ class ChannelRepository(
     }
 
     /**
+     * Refreshes the subscription configuration so an M3U URL added in the admin dashboard
+     * after login is picked up without requiring the user to sign in again.
+     */
+    private suspend fun refreshAudioSession(savedSession: UserSession): Pair<UserSession, String?> {
+        val password = savedSession.password
+        if (savedSession.username.isBlank() || password.isNullOrBlank()) {
+            return savedSession to "Cannot refresh subscription audio settings: saved credentials are missing"
+        }
+        val refreshed = iptvProvider.authenticate(savedSession.username, password)
+        return if (refreshed.isSuccess) {
+            val session = refreshed.getOrThrow()
+            preferencesManager.saveSession(session)
+            session to null
+        } else {
+            savedSession to (refreshed.exceptionOrNull()?.message ?: "Could not refresh subscription audio settings")
+        }
+    }
+
+    /**
      * Safe Atomic Synchronization:
      * 1. Download
      * 2. Parse
@@ -136,21 +155,35 @@ class ChannelRepository(
             onProgress(SyncState.Syncing("Updating channels database...", 0.6f))
             channelDao.atomicUpdateCatalog(newChannels)
 
-            // Step 2: External audio sync (optional; failures never block video channels).
+            // Refresh config: the audio M3U may have been added/changed in the dashboard
+            // after this app session was first saved.
+            val (audioSession, refreshError) = refreshAudioSession(session)
             var audioCount = 0
-            val audioUrl = session.externalAudioUrl
-            if (!audioUrl.isNullOrBlank()) {
+            var audioWarning: String? = null
+            val audioUrl = audioSession.externalAudioUrl?.trim()?.takeIf { it.isNotEmpty() }
+            if (audioUrl != null) {
                 onProgress(SyncState.Syncing("Syncing external commentary...", 0.8f))
                 val audioResult = iptvProvider.fetchExternalAudio(audioUrl)
                 if (audioResult.isSuccess) {
                     val audioList = audioResult.getOrThrow()
                     audioDao.atomicUpdateExternalAudio(audioList)
                     audioCount = audioList.size
+                    if (audioCount == 0) {
+                        audioWarning = "The external audio playlist contains no usable tracks."
+                    }
+                } else {
+                    audioWarning = audioResult.exceptionOrNull()?.message ?: "External audio sync failed"
+                }
+            } else {
+                audioWarning = if (refreshError != null) {
+                    "No M3U URL is available in the saved session, and subscription refresh failed: $refreshError"
+                } else {
+                    "No external audio M3U URL is configured for this subscription."
                 }
             }
 
             preferencesManager.setLastSyncTime(System.currentTimeMillis())
-            onProgress(SyncState.Success(newChannels.size, audioCount))
+            onProgress(SyncState.Success(newChannels.size, audioCount, audioWarning))
             Result.success(Pair(newChannels.size, audioCount))
         } catch (e: Exception) {
             onProgress(SyncState.Error(e.message ?: "Sync failed"))
@@ -178,13 +211,24 @@ class ChannelRepository(
 
     suspend fun syncExternalAudioOnly(): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            val session = preferencesManager.userSession.firstOrNull()
+            val savedSession = preferencesManager.userSession.firstOrNull()
                 ?: return@withContext Result.failure(IllegalStateException("No active user session"))
-            val audioUrl = session.externalAudioUrl ?: return@withContext Result.success(0)
+            val (session, refreshError) = refreshAudioSession(savedSession)
+            val audioUrl = session.externalAudioUrl?.trim()?.takeIf { it.isNotEmpty() }
+                ?: return@withContext Result.failure(
+                    IllegalStateException(
+                        if (refreshError != null) {
+                            "No M3U URL is available in the saved session, and subscription refresh failed: $refreshError"
+                        } else {
+                            "No external audio M3U URL is configured for this subscription. Save it in the admin dashboard, then tap Sync Commentary again."
+                        }
+                    )
+                )
             val result = iptvProvider.fetchExternalAudio(audioUrl)
             if (result.isSuccess) {
                 val audioList = result.getOrThrow()
                 audioDao.atomicUpdateExternalAudio(audioList)
+                preferencesManager.setLastSyncTime(System.currentTimeMillis())
                 Result.success(audioList.size)
             } else {
                 Result.failure(result.exceptionOrNull() ?: Exception("Failed to sync external audio"))
