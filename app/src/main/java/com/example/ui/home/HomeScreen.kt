@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -116,7 +117,7 @@ fun HomeScreen(
                 .padding(horizontal = if (isLandscape) 24.dp else 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Header(username = username)
+            Header(username = username, onSettingsClick = onNavigateSettings)
             Spacer(Modifier.height(if (isLandscape) 12.dp else 16.dp))
 
             if (isLandscape) {
@@ -190,7 +191,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        featuredChannels.forEach { channel ->
+                        featuredChannels.take(6).forEach { channel ->
                             FeaturedChannelCard(
                                 channel = channel,
                                 modifier = Modifier.width(188.dp).height(82.dp),
@@ -245,7 +246,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Header(username: String) {
+private fun Header(username: String, onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -292,6 +293,23 @@ private fun Header(username: String) {
                 }
             }
         }
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(NavySurface.copy(alpha = 0.9f))
+                .border(1.dp, GoldPrimary.copy(alpha = 0.35f), CircleShape)
+                .clickable(onClick = onSettingsClick)
+                .focusable(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "الإعدادات",
+                tint = GoldPrimary,
+                modifier = Modifier.size(22.dp)
+            )
+        }
     }
 }
 
@@ -320,8 +338,8 @@ private fun HeroBanner(onClick: () -> Unit, height: Int) {
             )
         )
         Column(
-            modifier = Modifier.align(Alignment.BottomStart).padding(18.dp),
-            horizontalAlignment = Alignment.Start
+            modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
+            horizontalAlignment = Alignment.End
         ) {
             Text(
                 text = "EAGLE SPORTS • LIVE",
@@ -336,7 +354,8 @@ private fun HeroBanner(onClick: () -> Unit, height: Int) {
                 text = "عالم الرياضة بين يديك",
                 color = Color.White,
                 fontSize = 19.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End
             )
             Spacer(Modifier.height(9.dp))
             Row(
