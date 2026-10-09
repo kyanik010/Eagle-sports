@@ -67,6 +67,11 @@ class ChannelRepository(
         return@withContext audioDao.getAudioForChannel(channel.stableId, channel.tvgId, normalized)
     }
 
+    /** Returns every track from the configured external-audio M3U, without filtering by video channel name. */
+    suspend fun getAllExternalAudio(): List<ExternalAudioEntity> = withContext(Dispatchers.IO) {
+        return@withContext audioDao.getAllAudio().firstOrNull().orEmpty()
+    }
+
     /**
      * Revalidates credentials against the enabled host list once when the saved host fails.
      * The activation function tries the configured hosts and returns the currently working host.
