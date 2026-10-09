@@ -194,7 +194,7 @@ fun PlayerScreen(
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
-                        text = if (videoStatus == PlaybackStatus.PREPARING) "Connecting Live Feed..." else "Buffering Stream...",
+                        text = if (videoStatus == PlaybackStatus.PREPARING) "جارٍ الاتصال بالبث المباشر..." else "جارٍ تحميل البث...",
                         color = TextPrimary,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
                     )
@@ -214,7 +214,7 @@ fun PlayerScreen(
                     CircularProgressIndicator(color = CyanAccent, modifier = Modifier.size(44.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Reconnecting to live broadcast...",
+                        text = "جارٍ إعادة الاتصال بالبث المباشر...",
                         color = CyanAccent,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -241,14 +241,14 @@ fun PlayerScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Stream Connection Error",
+                            text = "خطأ في الاتصال بالبث",
                             color = RedLive,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = videoError ?: "Unable to establish live stream connection.",
+                            text = videoError ?: "تعذّر إنشاء اتصال بالبث المباشر.",
                             color = TextSecondary,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -260,7 +260,7 @@ fun PlayerScreen(
                                 .background(GoldPrimary)
                                 .size(44.dp)
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Retry", tint = NavyDeep)
+                            Icon(Icons.Default.Refresh, contentDescription = "إعادة المحاولة", tint = NavyDeep)
                         }
                     }
                 }
@@ -292,8 +292,8 @@ fun PlayerScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (audioStatus == PlaybackStatus.ERROR) "External Audio Error (Video Playing)"
-                            else "External Commentary: ${audioDelayMs}ms",
+                            text = if (audioStatus == PlaybackStatus.ERROR) "خطأ في الصوت الخارجي (الفيديو يعمل)"
+                            else "التعليق الخارجي: ${audioDelayMs} مللي ثانية",
                             color = if (audioStatus == PlaybackStatus.ERROR) RedLive else CyanAccent,
                             style = MaterialTheme.typography.labelSmall
                         )
@@ -336,7 +336,7 @@ fun PlayerScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = "رجوع",
                             tint = Color.White
                         )
                     }
@@ -353,7 +353,7 @@ fun PlayerScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "LIVE • ${currentChannel?.channelNumber ?: channel.channelNumber}",
+                                text = "مباشر • ${currentChannel?.channelNumber ?: channel.channelNumber}",
                                 color = GoldPrimary,
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                             )
@@ -373,17 +373,17 @@ fun PlayerScreen(
                     ) {
                         Icon(
                             imageVector = if (currentChannel?.isFavorite == true) Icons.Default.Star else Icons.Outlined.StarOutline,
-                            contentDescription = "Favorite",
+                            contentDescription = "المفضلة",
                             tint = if (currentChannel?.isFavorite == true) GoldPrimary else Color.White
                         )
                     }
 
                     // Channel Up / Down
                     IconButton(onClick = { viewModel.channelDown() }) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Prev Channel", tint = Color.White)
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "القناة السابقة", tint = Color.White)
                     }
                     IconButton(onClick = { viewModel.channelUp() }) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Next Channel", tint = Color.White)
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "القناة التالية", tint = Color.White)
                     }
                 }
 
@@ -403,7 +403,7 @@ fun PlayerScreen(
                     ) {
                         Icon(
                             imageVector = if (videoStatus == PlaybackStatus.PLAYING) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pause",
+                            contentDescription = "تشغيل / إيقاف مؤقت",
                             tint = GoldPrimary,
                             modifier = Modifier.size(38.dp)
                         )
@@ -423,7 +423,7 @@ fun PlayerScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         currentChannel?.epgCurrentTitle?.let { epg ->
                             Text(
-                                text = "NOW: $epg",
+                                text = "الآن: $epg",
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                                 maxLines = 1
@@ -431,7 +431,7 @@ fun PlayerScreen(
                         }
                         currentChannel?.epgNextTitle?.let { nextEpg ->
                             Text(
-                                text = "NEXT: $nextEpg",
+                                text = "التالي: $nextEpg",
                                 color = TextMuted,
                                 style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1
@@ -450,7 +450,7 @@ fun PlayerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Headphones,
-                                contentDescription = "External Audio",
+                                contentDescription = "الصوت الخارجي",
                                 tint = if (audioMode is AudioSourceMode.External) CyanAccent else Color.White
                             )
                         }
@@ -462,7 +462,7 @@ fun PlayerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More",
+                                contentDescription = "المزيد",
                                 tint = Color.White
                             )
                         }
@@ -474,7 +474,7 @@ fun PlayerScreen(
                         ) {
                             Icon(
                                 imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                                contentDescription = "Fullscreen",
+                                contentDescription = "ملء الشاشة",
                                 tint = Color.White
                             )
                         }
@@ -497,14 +497,14 @@ fun PlayerScreen(
                         .padding(horizontal = 24.dp, vertical = 16.dp)
                 ) {
                     Text(
-                        text = "Audio & Commentary Source",
+                        text = "مصدر الصوت والتعليق",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = GoldPrimary
                         )
                     )
                     Text(
-                        text = "Independent dual audio player engine without video interruption",
+                        text = "مشغل صوت مزدوج مستقل دون مقاطعة الفيديو",
                         style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
                     )
 
@@ -528,8 +528,8 @@ fun PlayerScreen(
                             Icon(Icons.Default.Audiotrack, contentDescription = null, tint = GoldPrimary)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Original Broadcast Audio", color = TextPrimary, fontWeight = FontWeight.Bold)
-                                Text("Direct stream audio feed", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                Text("صوت البث الأصلي", color = TextPrimary, fontWeight = FontWeight.Bold)
+                                Text("الصوت المضمّن في البث مباشرةً", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
                             }
                             if (audioMode is AudioSourceMode.Original) {
                                 Icon(Icons.Default.Check, contentDescription = null, tint = GoldPrimary)
@@ -541,7 +541,7 @@ fun PlayerScreen(
 
                     // External Audio Tracks
                     Text(
-                        text = "External Sports Commentary (${availableAudioTracks.size} available)",
+                        text = "التعليق الرياضي الخارجي (${availableAudioTracks.size} مصدر متاح)",
                         style = MaterialTheme.typography.labelMedium.copy(color = CyanAccent)
                     )
 
@@ -549,7 +549,7 @@ fun PlayerScreen(
 
                     if (availableAudioTracks.isEmpty()) {
                         Text(
-                            text = "No matched external audio feeds found for this channel.",
+                            text = "لم يتم العثور على مصادر صوت خارجي مطابقة لهذه القناة.",
                             color = TextMuted,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -597,7 +597,7 @@ fun PlayerScreen(
                     if (audioMode is AudioSourceMode.External) {
                         Spacer(modifier = Modifier.height(18.dp))
                         Text(
-                            text = "Manual Audio Delay: ${audioDelayMs}ms (-3000ms to +3000ms)",
+                            text = "تأخير الصوت يدويًا: ${audioDelayMs} مللي ثانية (من ‎-3000 إلى ‎+3000 مللي ثانية)",
                             style = MaterialTheme.typography.labelLarge.copy(color = GoldPrimary, fontWeight = FontWeight.Bold)
                         )
                         Row(
@@ -613,9 +613,9 @@ fun PlayerScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(NavySurface)
                             ) {
-                                Icon(Icons.Default.Remove, contentDescription = "-100ms", tint = GoldPrimary)
+                                Icon(Icons.Default.Remove, contentDescription = "‎-100 مللي ثانية", tint = GoldPrimary)
                             }
-                            Text("-100ms", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                            Text("‎-100 مللي ثانية", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
 
                             IconButton(
                                 onClick = { viewModel.adjustAudioDelay(-50) },
@@ -627,7 +627,7 @@ fun PlayerScreen(
                             }
 
                             Text(
-                                "${audioDelayMs}ms",
+                                "${audioDelayMs} مللي ثانية",
                                 color = GoldPrimary,
                                 fontWeight = FontWeight.ExtraBold,
                                 style = MaterialTheme.typography.titleMedium
@@ -648,9 +648,9 @@ fun PlayerScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(NavySurface)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "+100ms", tint = GoldPrimary)
+                                Icon(Icons.Default.Add, contentDescription = "‎+100 مللي ثانية", tint = GoldPrimary)
                             }
-                            Text("+100ms", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                            Text("‎+100 مللي ثانية", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
                         }
                     }
 
