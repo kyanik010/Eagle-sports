@@ -85,10 +85,10 @@ class ChannelRepository(
 
         val refreshResult = iptvProvider.authenticate(session.username, password)
         if (refreshResult.isFailure) {
-            val original = firstAttempt.exceptionOrNull()?.message ?: "Channel sync failed"
-            val refreshError = refreshResult.exceptionOrNull()?.message ?: "Host revalidation failed"
+            val original = firstAttempt.exceptionOrNull()?.message ?: "فشلت مزامنة القنوات"
+            val refreshError = refreshResult.exceptionOrNull()?.message ?: "فشل التحقق من الخادم"
             return session to Result.failure(
-                IllegalStateException("$original; automatic host revalidation failed: $refreshError")
+                IllegalStateException("$original؛ فشل التحقق التلقائي من الخادم: $refreshError")
             )
         }
 
@@ -96,9 +96,9 @@ class ChannelRepository(
         preferencesManager.saveSession(refreshedSession)
         val retry = iptvProvider.fetchChannels(refreshedSession)
         if (retry.isFailure) {
-            val error = retry.exceptionOrNull()?.message ?: "Channel sync failed after host revalidation"
+            val error = retry.exceptionOrNull()?.message ?: "فشلت مزامنة القنوات بعد التحقق من الخادم"
             return refreshedSession to Result.failure(
-                IllegalStateException("Channel sync failed after automatic host revalidation: $error")
+                IllegalStateException("فشلت مزامنة القنوات بعد التحقق التلقائي من الخادم: $error")
             )
         }
         return refreshedSession to retry
@@ -111,7 +111,7 @@ class ChannelRepository(
     private suspend fun refreshAudioSession(savedSession: UserSession): Pair<UserSession, String?> {
         val password = savedSession.password
         if (savedSession.username.isBlank() || password.isNullOrBlank()) {
-            return savedSession to "Cannot refresh subscription audio settings: saved credentials are missing"
+            return savedSession to "تعذّر تحديث إعدادات صوت الاشتراك: بيانات الدخول المحفوظة غير موجودة"
         }
         val refreshed = iptvProvider.authenticate(savedSession.username, password)
         return if (refreshed.isSuccess) {
@@ -119,7 +119,7 @@ class ChannelRepository(
             preferencesManager.saveSession(session)
             session to null
         } else {
-            savedSession to (refreshed.exceptionOrNull()?.message ?: "Could not refresh subscription audio settings")
+            savedSession to (refreshed.exceptionOrNull()?.message ?: "تعذّر تحديث إعدادات صوت الاشتراك")
         }
     }
 
@@ -133,26 +133,26 @@ class ChannelRepository(
      */
     suspend fun syncAll(onProgress: (SyncState) -> Unit = {}): Result<Pair<Int, Int>> = withContext(Dispatchers.IO) {
         try {
-            onProgress(SyncState.Syncing("Connecting to IPTV service...", 0.1f))
+            onProgress(SyncState.Syncing("جارٍ الاتصال بخدمة IPTV...", 0.1f))
             val savedSession = preferencesManager.userSession.firstOrNull()
-                ?: return@withContext Result.failure(IllegalStateException("No active user session"))
+                ?: return@withContext Result.failure(IllegalStateException("لا توجد جلسة مستخدم نشطة"))
 
             // If the locally saved host fails, revalidate once through Supabase and retry on its selected host.
-            onProgress(SyncState.Syncing("Downloading channels...", 0.3f))
+            onProgress(SyncState.Syncing("جارٍ تنزيل القنوات...", 0.3f))
             val (session, channelsResult) = fetchChannelsWithHostRefresh(savedSession)
             if (channelsResult.isFailure) {
-                val err = channelsResult.exceptionOrNull()?.message ?: "Failed to fetch channels"
+                val err = channelsResult.exceptionOrNull()?.message ?: "تعذّر جلب القنوات"
                 onProgress(SyncState.Error(err))
                 return@withContext Result.failure(Exception(err))
             }
 
             val newChannels = channelsResult.getOrThrow()
             if (newChannels.isEmpty()) {
-                onProgress(SyncState.Error("Downloaded channel list was empty"))
-                return@withContext Result.failure(Exception("Channel list was empty"))
+                onProgress(SyncState.Error("قائمة القنوات التي تم تنزيلها فارغة"))
+                return@withContext Result.failure(Exception("قائمة القنوات فارغة"))
             }
 
-            onProgress(SyncState.Syncing("Updating channels database...", 0.6f))
+            onProgress(SyncState.Syncing("جارٍ تحديث قاعدة بيانات القنوات...", 0.6f))
             channelDao.atomicUpdateCatalog(newChannels)
 
             // Refresh config: the audio M3U may have been added/changed in the dashboard
@@ -162,23 +162,23 @@ class ChannelRepository(
             var audioWarning: String? = null
             val audioUrl = audioSession.externalAudioUrl?.trim()?.takeIf { it.isNotEmpty() }
             if (audioUrl != null) {
-                onProgress(SyncState.Syncing("Syncing external commentary...", 0.8f))
+                onProgress(SyncState.Syncing("جارٍ مزامنة التعليق الصوتي الخارجي...", 0.8f))
                 val audioResult = iptvProvider.fetchExternalAudio(audioUrl)
                 if (audioResult.isSuccess) {
                     val audioList = audioResult.getOrThrow()
                     audioDao.atomicUpdateExternalAudio(audioList)
                     audioCount = audioList.size
                     if (audioCount == 0) {
-                        audioWarning = "The external audio playlist contains no usable tracks."
+                        audioWarning = "قائمة الصوت الخارجي لا تحتوي على مسارات قابلة للاستخدام."
                     }
                 } else {
-                    audioWarning = audioResult.exceptionOrNull()?.message ?: "External audio sync failed"
+                    audioWarning = audioResult.exceptionOrNull()?.message ?: "فشلت مزامنة الصوت الخارجي"
                 }
             } else {
                 audioWarning = if (refreshError != null) {
-                    "No M3U URL is available in the saved session, and subscription refresh failed: $refreshError"
+                    "رابط M3U غير متوفر في الجلسة المحفوظة، وفشل تحديث الاشتراك: $refreshError"
                 } else {
-                    "No external audio M3U URL is configured for this subscription."
+                    "لم يتم ضبط رابط M3U للصوت الخارجي لهذا الاشتراك."
                 }
             }
 
@@ -186,7 +186,7 @@ class ChannelRepository(
             onProgress(SyncState.Success(newChannels.size, audioCount, audioWarning))
             Result.success(Pair(newChannels.size, audioCount))
         } catch (e: Exception) {
-            onProgress(SyncState.Error(e.message ?: "Sync failed"))
+            onProgress(SyncState.Error(e.message ?: "فشلت المزامنة"))
             Result.failure(e)
         }
     }
@@ -194,7 +194,7 @@ class ChannelRepository(
     suspend fun syncChannelsOnly(): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val savedSession = preferencesManager.userSession.firstOrNull()
-                ?: return@withContext Result.failure(IllegalStateException("No active user session"))
+                ?: return@withContext Result.failure(IllegalStateException("لا توجد جلسة مستخدم نشطة"))
             val (session, result) = fetchChannelsWithHostRefresh(savedSession)
             if (result.isSuccess) {
                 val channels = result.getOrThrow()
@@ -202,7 +202,7 @@ class ChannelRepository(
                 preferencesManager.setLastSyncTime(System.currentTimeMillis())
                 Result.success(channels.size)
             } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Failed to sync channels"))
+                Result.failure(result.exceptionOrNull() ?: Exception("تعذّرت مزامنة القنوات"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -212,15 +212,15 @@ class ChannelRepository(
     suspend fun syncExternalAudioOnly(): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val savedSession = preferencesManager.userSession.firstOrNull()
-                ?: return@withContext Result.failure(IllegalStateException("No active user session"))
+                ?: return@withContext Result.failure(IllegalStateException("لا توجد جلسة مستخدم نشطة"))
             val (session, refreshError) = refreshAudioSession(savedSession)
             val audioUrl = session.externalAudioUrl?.trim()?.takeIf { it.isNotEmpty() }
                 ?: return@withContext Result.failure(
                     IllegalStateException(
                         if (refreshError != null) {
-                            "No M3U URL is available in the saved session, and subscription refresh failed: $refreshError"
+                            "رابط M3U غير متوفر في الجلسة المحفوظة، وفشل تحديث الاشتراك: $refreshError"
                         } else {
-                            "No external audio M3U URL is configured for this subscription. Save it in the admin dashboard, then tap Sync Commentary again."
+                            "لم يتم ضبط رابط M3U للصوت الخارجي لهذا الاشتراك. احفظ الرابط في لوحة الإدارة، ثم اضغط على مزامنة التعليق الصوتي مجددًا."
                         }
                     )
                 )
@@ -231,7 +231,7 @@ class ChannelRepository(
                 preferencesManager.setLastSyncTime(System.currentTimeMillis())
                 Result.success(audioList.size)
             } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Failed to sync external audio"))
+                Result.failure(result.exceptionOrNull() ?: Exception("تعذّرت مزامنة الصوت الخارجي"))
             }
         } catch (e: Exception) {
             Result.failure(e)
