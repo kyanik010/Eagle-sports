@@ -2,6 +2,7 @@ package com.example.ui.player
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
@@ -71,6 +72,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -117,16 +125,27 @@ fun PlayerScreen(
     var showMoreSheet by remember { mutableStateOf(false) }
     var showDelayControls by remember { mutableStateOf(false) }
     var isFullscreen by remember { mutableStateOf(false) }
+    val controlsFocusRequester = remember { FocusRequester() }
+    val isTelevision = (context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
 
     LaunchedEffect(channel.stableId) {
         viewModel.loadChannel(channel)
     }
 
-    // Auto-hide controls timer
-    LaunchedEffect(showControls) {
-        if (showControls) {
+    // Keep controls visible on Android TV so the remote never loses its target.
+    // On touch devices, retain the existing five-second auto-hide behavior.
+    LaunchedEffect(showControls, isTelevision, showMoreSheet) {
+        if (showControls && !isTelevision && !showMoreSheet) {
             delay(5000)
             showControls = false
+        }
+    }
+
+    // When controls are shown on TV, place initial focus on a real actionable control.
+    LaunchedEffect(isTelevision, showControls) {
+        if (isTelevision && showControls) {
+            kotlinx.coroutines.yield()
+            runCatching { controlsFocusRequester.requestFocus() }
         }
     }
 
@@ -159,7 +178,25 @@ fun PlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable { showControls = !showControls }
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && !showControls &&
+                    event.key in setOf(
+                        Key.DirectionUp,
+                        Key.DirectionDown,
+                        Key.DirectionLeft,
+                        Key.DirectionRight,
+                        Key.DirectionCenter,
+                        Key.Enter,
+                        Key.NumPadEnter
+                    )
+                ) {
+                    showControls = true
+                    true
+                } else {
+                    false
+                }
+            }
+            .clickable { if (!isTelevision) showControls = !showControls else showControls = true }
             .testTag("player_screen")
     ) {
         // ExoPlayer Video View
@@ -397,6 +434,7 @@ fun PlayerScreen(
                     IconButton(
                         onClick = { viewModel.togglePlayPause() },
                         modifier = Modifier
+                            .focusRequester(controlsFocusRequester)
                             .size(72.dp)
                             .clip(CircleShape)
                             .background(NavyDark.copy(alpha = 0.75f))
