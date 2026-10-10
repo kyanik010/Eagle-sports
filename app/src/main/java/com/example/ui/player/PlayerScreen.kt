@@ -113,6 +113,7 @@ fun PlayerScreen(
 ) {
     val context = LocalContext.current
     val currentChannel by viewModel.currentChannel.collectAsState()
+    val isFavorite by viewModel.isFavorite.collectAsState()
     val videoStatus by viewModel.videoStatus.collectAsState()
     val audioStatus by viewModel.audioStatus.collectAsState()
     val audioMode by viewModel.audioMode.collectAsState()
@@ -411,9 +412,9 @@ fun PlayerScreen(
                         modifier = Modifier.testTag("player_favorite_button")
                     ) {
                         Icon(
-                            imageVector = if (currentChannel?.isFavorite == true) Icons.Default.Star else Icons.Outlined.StarOutline,
+                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarOutline,
                             contentDescription = "المفضلة",
-                            tint = if (currentChannel?.isFavorite == true) GoldPrimary else Color.White
+                            tint = if (isFavorite) GoldPrimary else Color.White
                         )
                     }
 
