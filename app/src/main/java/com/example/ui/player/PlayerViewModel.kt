@@ -31,6 +31,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val videoError: StateFlow<String?> = dualPlayerController.videoEngine.errorMessage
     val audioError: StateFlow<String?> = dualPlayerController.audioEngine.errorMessage
 
+    private val _isFavorite = MutableStateFlow(false)
+    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
+
     private val _availableAudioTracks = MutableStateFlow<List<ExternalAudioEntity>>(emptyList())
     val availableAudioTracks: StateFlow<List<ExternalAudioEntity>> = _availableAudioTracks.asStateFlow()
 
@@ -50,8 +53,16 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun loadChannel(channel: ChannelEntity) {
         dualPlayerController.playChannel(channel)
+        _isFavorite.value = channel.isFavorite
         viewModelScope.launch {
             preferencesManager.setLastChannelId(channel.stableId)
+            // Refresh favorite state from the database, as channel objects passed by navigation
+            // may predate the latest favorite toggle.
+            repository.getChannelById(channel.stableId)?.let { saved ->
+                if (currentChannel.value?.stableId == saved.stableId) {
+                    _isFavorite.value = saved.isFavorite
+                }
+            }
             // Show the complete external-audio M3U catalog. Audio channel names often differ
             // from the video channel name, so filtering by the current video channel hides valid tracks.
             val tracks = repository.getAllExternalAudio()
@@ -93,8 +104,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun toggleFavorite() {
         val cur = currentChannel.value ?: return
+        val requestedFavorite = !_isFavorite.value
+        // Update immediately so the star responds without waiting for disk I/O.
+        _isFavorite.value = requestedFavorite
         viewModelScope.launch {
-            repository.toggleFavorite(cur.stableId)
+            try {
+                repository.toggleFavorite(cur.stableId)
+                val saved = repository.getChannelById(cur.stableId)
+                if (currentChannel.value?.stableId == cur.stableId) {
+                    _isFavorite.value = saved?.isFavorite ?: requestedFavorite
+                }
+            } catch (_: Exception) {
+                if (currentChannel.value?.stableId == cur.stableId) {
+                    _isFavorite.value = !requestedFavorite
+                }
+            }
         }
     }
 
