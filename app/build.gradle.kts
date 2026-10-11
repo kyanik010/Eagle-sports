@@ -16,7 +16,7 @@ android {
     applicationId = "com.aistudio.eaglesports.vxkz"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
+    versionCode = 100 + (System.getenv("VERSION_CODE")?.toIntOrNull() ?: 0)
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
