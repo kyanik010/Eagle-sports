@@ -119,8 +119,13 @@ class VideoPlayerEngine(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                // Ignore a late error callback from a channel that has already been replaced.
+                val failedMediaId = player.currentMediaItem?.mediaId
+                if (failedMediaId.isNullOrBlank() || failedMediaId != currentChannel?.stableId) {
+                    return
+                }
                 _errorMessage.value = error.message ?: error.errorCodeName
-                handlePlaybackFailure()
+                handlePlaybackFailure(failedMediaId)
             }
         })
         exoPlayer = player
@@ -153,8 +158,8 @@ class VideoPlayerEngine(
                 .setUri(uri)
                 .setMediaId(channel.stableId)
                 .build()
-            player.stop()
-            player.clearMediaItems()
+            // setMediaItem replaces the current item; stop()+clearMediaItems() first
+            // creates extra state transitions during channel zapping without being required.
             player.setMediaItem(mediaItem)
             player.prepare()
             player.playWhenReady = true
@@ -167,7 +172,7 @@ class VideoPlayerEngine(
         currentChannel?.let(::playChannel)
     }
 
-    private fun handlePlaybackFailure() {
+    private fun handlePlaybackFailure(failedMediaId: String) {
         if (reconnectAttempts >= maxReconnectAttempts) {
             _status.value = PlaybackStatus.ERROR
             return
@@ -177,10 +182,18 @@ class VideoPlayerEngine(
         reconnectJob?.cancel()
         reconnectJob = scope.launch(Dispatchers.Main.immediate) {
             delay(2000L * reconnectAttempts)
+            // Do not let a delayed retry for an old stream replace a channel selected meanwhile.
             val channel = currentChannel ?: return@launch
+            if (channel.stableId != failedMediaId) return@launch
             val player = exoPlayer ?: return@launch
+            if (player.currentMediaItem?.mediaId != failedMediaId) return@launch
             try {
-                player.setMediaItem(MediaItem.fromUri(Uri.parse(channel.streamUrl)))
+                player.setMediaItem(
+                    MediaItem.Builder()
+                        .setUri(Uri.parse(channel.streamUrl))
+                        .setMediaId(channel.stableId)
+                        .build()
+                )
                 player.prepare()
                 player.playWhenReady = true
             } catch (e: Exception) {
