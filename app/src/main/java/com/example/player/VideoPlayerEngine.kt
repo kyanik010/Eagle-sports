@@ -70,7 +70,7 @@ class VideoPlayerEngine(
         val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
 
         // Stable live profile: a bigger reserve absorbs network jitter during matches.
-        // - start playing after 2.5s buffered (fast channel zapping)
+        // - start playing after 1.5s buffered to reduce initial channel startup delay
         // - after a stall, rebuild 5s before resuming (avoids repeated stutter)
         // - keep 12s minimum / 25s maximum buffered
         val loadControl = DefaultLoadControl.Builder()
@@ -251,7 +251,7 @@ class VideoPlayerEngine(
     private companion object {
         const val BUFFER_MIN_MS = 12_000
         const val BUFFER_MAX_MS = 25_000
-        const val BUFFER_FOR_PLAYBACK_MS = 2_500
+        const val BUFFER_FOR_PLAYBACK_MS = 1_500
         const val BUFFER_AFTER_REBUFFER_MS = 5_000
         const val LOAD_RETRY_COUNT = 8
     }
