@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.model.ChannelEntity
-import com.example.ui.theme.CyanAccent
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.NavyBorder
 import com.example.ui.theme.NavyDark
