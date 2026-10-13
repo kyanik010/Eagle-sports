@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListState
@@ -174,7 +175,7 @@ fun ChannelsScreen(
                 LazyColumn(
                     state = groupListState,
                     modifier = Modifier
-                        .width(220.dp)
+                        .width(200.dp)
                         .fillMaxHeight()
                         .background(Color(0xFF0D131D))
                         .testTag("channel_categories"),
@@ -197,7 +198,7 @@ fun ChannelsScreen(
                                 text = if (group == "All") "الكل" else group,
                                 color = if (isSelected) Color(0xFFF5C211) else Color(0xFF64748B),
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth()
@@ -208,6 +209,7 @@ fun ChannelsScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .widthIn(min = 0.dp)
                         .fillMaxHeight()
                 ) {
                     ChannelResults(
@@ -279,7 +281,7 @@ private fun ChannelResults(
                 .fillMaxSize()
                 .testTag("channels_list"),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             items(items = channels, key = { it.stableId }) { channel ->
                 ChannelListItem(
@@ -311,7 +313,6 @@ fun ChannelListItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
             .clip(RoundedCornerShape(8.dp))
             .border(
                 width = if (isFocused) 2.dp else 1.dp,
@@ -327,7 +328,7 @@ fun ChannelListItem(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Channel Number
@@ -339,7 +340,9 @@ fun ChannelListItem(
                         color = Color(0xFFF5C211),
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier = Modifier.width(30.dp)
+                    modifier = Modifier.width(24.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -347,7 +350,7 @@ fun ChannelListItem(
             if (showLogo) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFF1E293B)),
                     contentAlignment = Alignment.Center
@@ -363,7 +366,7 @@ fun ChannelListItem(
                         Icon(
                             imageVector = Icons.Default.LiveTv,
                             contentDescription = null,
-                            tint = CyanAccent,
+                            tint = GoldPrimary,
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -371,8 +374,8 @@ fun ChannelListItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Name & Current EPG / Group
-            Column(modifier = Modifier.weight(1f)) {
+            // Name & Current EPG / Group — preserve original channel information.
+            Column(modifier = Modifier.weight(1f).widthIn(min = 0.dp)) {
                 Text(
                     text = channel.name,
                     style = MaterialTheme.typography.titleSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF1F5F9)),
