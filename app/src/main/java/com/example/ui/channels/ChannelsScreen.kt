@@ -174,7 +174,7 @@ fun ChannelsScreen(
                 LazyColumn(
                     state = groupListState,
                     modifier = Modifier
-                        .width(148.dp)
+                        .width(180.dp)
                         .fillMaxHeight()
                         .background(NavyDark)
                         .testTag("channel_categories"),
@@ -189,14 +189,14 @@ fun ChannelsScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(if (isSelected) GoldPrimary else NavySurface)
                                 .clickable { viewModel.selectGroup(group) }
-                                .padding(horizontal = 10.dp, vertical = 13.dp),
+                                .padding(horizontal = 10.dp, vertical = 18.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = if (group == "All") "الكل" else group,
                                 color = if (isSelected) NavyDeep else TextPrimary,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth()
