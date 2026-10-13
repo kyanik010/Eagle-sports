@@ -625,7 +625,7 @@ fun ChannelListItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (showNumbers) {
+                    if (showNumber) {
                         Text(
                             text = "${channel.channelNumber}",
                             color = EagleGold,
