@@ -230,16 +230,15 @@ class ExternalAudioEngine(
         operationId++
         cancelPendingRetry()
         retryAttempts = 0
+        currentAudio = null
+        _status.value = PlaybackStatus.IDLE
+        _errorMessage.value = null
         scope.launch(Dispatchers.Main) {
             try {
                 audioPlayer?.stop()
                 audioPlayer?.clearMediaItems()
             } catch (_: Exception) {
                 // Stopping audio must not affect video playback.
-            } finally {
-                _status.value = PlaybackStatus.IDLE
-                currentAudio = null
-                _errorMessage.value = null
             }
         }
     }
