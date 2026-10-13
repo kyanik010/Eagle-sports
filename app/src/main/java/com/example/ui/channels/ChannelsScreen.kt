@@ -334,11 +334,11 @@ fun ChannelListItem(
             if (showNumber) {
                 Text(
                     text = "${channel.channelNumber}",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        color = GoldPrimary,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        color = Color(0xFFF5C211),
                         fontWeight = FontWeight.Bold
                     ),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, color = Color(0xFFF5C211), fontWeight = FontWeight.Bold),
                     modifier = Modifier.width(30.dp)
                 )
             }
