@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.model.ChannelEntity
+import com.example.ui.theme.CyanAccent
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.NavyBorder
 import com.example.ui.theme.NavyDark
@@ -174,8 +175,7 @@ fun ChannelsScreen(
                 LazyColumn(
                     state = groupListState,
                     modifier = Modifier
-                        .fillMaxWidth(0.35f)
-                        .widthIn(max = 200.dp)
+                        .width(200.dp)
                         .fillMaxHeight()
                         .background(Color(0xFF0D131D))
                         .testTag("channel_categories"),
@@ -198,7 +198,7 @@ fun ChannelsScreen(
                                 text = if (group == "All") "الكل" else group,
                                 color = if (isSelected) Color(0xFFF5C211) else Color(0xFF64748B),
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth()
@@ -281,7 +281,7 @@ private fun ChannelResults(
                 .fillMaxSize()
                 .testTag("channels_list"),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             items(items = channels, key = { it.stableId }) { channel ->
                 ChannelListItem(
@@ -328,14 +328,29 @@ fun ChannelListItem(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Channel Number
+            if (showNumber) {
+                Text(
+                    text = "${channel.channelNumber}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        color = Color(0xFFF5C211),
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = Modifier.width(24.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
             // Logo or fallback
             if (showLogo) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFF1E293B)),
                     contentAlignment = Alignment.Center
@@ -359,7 +374,7 @@ fun ChannelListItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Name & Current EPG / Group
+            // Name & Current EPG / Group — preserve original channel information.
             Column(modifier = Modifier.weight(1f).widthIn(min = 0.dp)) {
                 Text(
                     text = channel.name,
@@ -367,22 +382,12 @@ fun ChannelListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (showNumber) {
-                    Text(
-                        text = "${channel.channelNumber}",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            color = Color(0xFFF5C211),
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier
-                            .background(Color(0x1AF5C211), RoundedCornerShape(4.dp))
-                            .border(1.dp, Color(0x26F5C211), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 1.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = channel.epgCurrentTitle ?: channel.groupName,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, color = Color(0xFF64748B)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             // Favorite Pin Button
