@@ -88,7 +88,7 @@ fun ChannelsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NavyDeep)
+            .background(Color(0xFF070B12))
             .statusBarsPadding()
             .testTag(if (isFavoritesOnly) "favorites_screen" else "channels_screen")
     ) {
@@ -174,11 +174,11 @@ fun ChannelsScreen(
                 LazyColumn(
                     state = groupListState,
                     modifier = Modifier
-                        .width(180.dp)
+                        .width(220.dp)
                         .fillMaxHeight()
-                        .background(NavyDark)
+                        .background(Color(0xFF0D131D))
                         .testTag("channel_categories"),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(allGroupsList, key = { it }) { group ->
@@ -187,17 +187,18 @@ fun ChannelsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) GoldPrimary else NavySurface)
+                                .background(if (isSelected) Color(0x1AF5C211) else Color.Transparent)
+                                .border(1.dp, if (isSelected) Color(0x4DF5C211) else Color.Transparent, RoundedCornerShape(10.dp))
                                 .clickable { viewModel.selectGroup(group) }
-                                .padding(horizontal = 10.dp, vertical = 18.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = if (group == "All") "الكل" else group,
-                                color = if (isSelected) NavyDeep else TextPrimary,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 15.sp,
-                                maxLines = 2,
+                                color = if (isSelected) Color(0xFFF5C211) else Color(0xFF64748B),
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -277,8 +278,8 @@ private fun ChannelResults(
             modifier = Modifier
                 .fillMaxSize()
                 .testTag("channels_list"),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(items = channels, key = { it.stableId }) { channel ->
                 ChannelListItem(
@@ -304,29 +305,29 @@ fun ChannelListItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused = interactionSource.collectIsFocusedAsState().value
 
-    val borderColor = if (isFocused) GoldPrimary else NavyBorder.copy(alpha = 0.5f)
-    val containerBg = if (isFocused) NavySurface.copy(alpha = 0.95f) else NavyDark.copy(alpha = 0.85f)
+    val borderColor = if (isFocused) Color(0xFFF5C211) else Color(0xFF1E293B)
+    val containerBg = if (isFocused) Color(0xFF1A2536) else Color(0xFF121A26)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .height(48.dp)
+            .clip(RoundedCornerShape(8.dp))
             .border(
                 width = if (isFocused) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(8.dp)
             )
             .focusable(interactionSource = interactionSource)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .testTag("channel_item_${channel.channelNumber}"),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(8.dp),
         color = containerBg
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 14.dp),
+                .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Channel Number
@@ -337,7 +338,8 @@ fun ChannelListItem(
                         color = GoldPrimary,
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier = Modifier.width(36.dp)
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, color = Color(0xFFF5C211), fontWeight = FontWeight.Bold),
+                    modifier = Modifier.width(30.dp)
                 )
             }
 
@@ -345,9 +347,9 @@ fun ChannelListItem(
             if (showLogo) {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(NavySurface),
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF1E293B)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!channel.logoUrl.isNullOrBlank()) {
@@ -355,36 +357,31 @@ fun ChannelListItem(
                             model = channel.logoUrl,
                             contentDescription = "شعار ${channel.name}",
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(29.dp)
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.LiveTv,
                             contentDescription = null,
                             tint = CyanAccent,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             // Name & Current EPG / Group
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = channel.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
-                    ),
+                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF1F5F9)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = channel.epgCurrentTitle ?: channel.groupName,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = if (channel.epgCurrentTitle != null) CyanAccent else TextSecondary
-                    ),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, color = Color(0xFF64748B)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -394,13 +391,14 @@ fun ChannelListItem(
             IconButton(
                 onClick = onToggleFavorite,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(26.dp)
                     .testTag("fav_button_${channel.channelNumber}")
             ) {
                 Icon(
                     imageVector = if (channel.isFavorite) Icons.Default.Star else Icons.Outlined.StarOutline,
                     contentDescription = if (channel.isFavorite) "إزالة من المفضلة" else "إضافة إلى المفضلة",
-                    tint = if (channel.isFavorite) GoldPrimary else TextMuted
+                    tint = if (channel.isFavorite) Color(0xFF22D3EE) else Color(0xFF64748B),
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }
