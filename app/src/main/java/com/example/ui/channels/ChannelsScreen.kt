@@ -60,6 +60,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -136,6 +137,23 @@ fun ChannelsScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val configuration = LocalConfiguration.current
     val sheetHeight = (configuration.screenHeightDp * 0.85f).dp
+    val isTelevision = (configuration.uiMode and android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+    val categoryFocusRequester = remember { FocusRequester() }
+    val searchFocusRequester = remember { FocusRequester() }
+    val channelFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isTelevision, showSearch, activeCategory, groups.size) {
+        if (isTelevision) {
+            kotlinx.coroutines.yield()
+            runCatching {
+                when {
+                    showSearch -> searchFocusRequester.requestFocus()
+                    activeCategory != null -> channelFocusRequester.requestFocus()
+                    groups.isNotEmpty() -> categoryFocusRequester.requestFocus()
+                }
+            }
+        }
+    }
 
     BackHandler(enabled = !isFavoritesOnly && showSearch) {
         showSearch = false
@@ -237,6 +255,7 @@ fun ChannelsScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = EagleGold) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                    .focusRequester(searchFocusRequester)
                     .testTag("channel_search_input"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -321,6 +340,7 @@ fun ChannelsScreen(
                             title = group,
                             count = categoryCount,
                             index = index,
+                            focusRequester = if (index == 0) categoryFocusRequester else null,
                             onClick = {
                                 activeCategory = group
                                 sheetSearch = ""
@@ -515,6 +535,7 @@ private fun CategoryCard(
     title: String,
     count: Int?,
     index: Int,
+    focusRequester: FocusRequester? = null,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -543,6 +564,7 @@ private fun CategoryCard(
                     color = if (pressed || focused) EagleGold else EagleBorder,
                     shape = RoundedCornerShape(12.dp)
                 )
+                .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
                 .focusable(interactionSource = interactionSource)
                 .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
                 .padding(10.dp)
@@ -590,7 +612,8 @@ private fun ChannelResults(
     showNumbers: Boolean,
     onChannelSelected: (ChannelEntity) -> Unit,
     onToggleFavorite: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    firstItemFocusRequester: FocusRequester? = null
 ) {
     if (channels.isEmpty()) {
         Box(
@@ -625,13 +648,14 @@ private fun ChannelResults(
             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            items(items = channels, key = { it.stableId }) { channel ->
+            itemsIndexed(items = channels, key = { _, channel -> channel.stableId }) { index, channel ->
                 ChannelListItem(
                     channel = channel,
                     showLogo = showLogos,
                     showNumber = showNumbers,
                     onClick = { onChannelSelected(channel) },
-                    onToggleFavorite = { onToggleFavorite(channel.stableId) }
+                    onToggleFavorite = { onToggleFavorite(channel.stableId) },
+                    focusRequester = if (index == 0) firstItemFocusRequester else null
                 )
             }
         }
@@ -644,7 +668,8 @@ fun ChannelListItem(
     showLogo: Boolean,
     showNumber: Boolean,
     onClick: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
+    focusRequester: FocusRequester? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused = interactionSource.collectIsFocusedAsState().value
@@ -659,6 +684,7 @@ fun ChannelListItem(
                 color = borderColor,
                 shape = RoundedCornerShape(10.dp)
             )
+            .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
             .focusable(interactionSource = interactionSource)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .testTag("channel_item_${channel.channelNumber}"),
