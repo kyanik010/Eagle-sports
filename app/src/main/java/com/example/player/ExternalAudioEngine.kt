@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import com.example.data.model.ExternalAudioEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,8 +69,9 @@ class ExternalAudioEngine(
     private fun initAudioPlayer() {
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .followRedirects(true)
+            .retryOnConnectionFailure(true)
             .build()
         audioHttpClient = okHttpClient
 
@@ -77,22 +79,29 @@ class ExternalAudioEngine(
             .setUserAgent("EagleSports/1.0 (AudioEngine)")
         val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
 
-        // Keep startup buffering unchanged and modestly reduce the maximum buffer.
+        // Match the main player's live buffer so brief network jitter is less likely
+        // to starve the external audio stream and coincide with video stalls.
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                4000,  // minBufferMs
-                15000, // maxBufferMs (previously 20000)
+                12000, // minBufferMs
+                25000, // maxBufferMs
                 1500,  // bufferForPlaybackMs
-                3000   // bufferForPlaybackAfterRebufferMs
+                5000   // bufferForPlaybackAfterRebufferMs
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
         val renderersFactory = DefaultRenderersFactory(context)
+            .setEnableDecoderFallback(true)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
 
+        // Give transient segment/request failures more opportunities to recover,
+        // without touching or recreating the independent video player.
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+            .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(8))
+
         val player = ExoPlayer.Builder(context, renderersFactory)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+            .setMediaSourceFactory(mediaSourceFactory)
             .setLoadControl(loadControl)
             .build()
 
