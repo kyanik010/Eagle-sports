@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -63,10 +64,31 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     _isFavorite.value = saved.isFavorite
                 }
             }
-            // Show the complete external-audio M3U catalog. Audio channel names often differ
-            // from the video channel name, so filtering by the current video channel hides valid tracks.
-            val tracks = repository.getAllExternalAudio()
-            _availableAudioTracks.value = tracks
+            // Offer audio sources from the customer's existing IPTV channel list first.
+            // This avoids requiring a separate audio M3U/subscription just to select another
+            // channel as the commentary source. Keep explicitly configured audio-only tracks too.
+            val iptvChannels = repository.allChannels.firstOrNull().orEmpty()
+                .filterNot { it.stableId == channel.stableId }
+                .filter { item ->
+                    val scheme = android.net.Uri.parse(item.streamUrl).scheme?.lowercase()
+                    (scheme == "http" || scheme == "https") && !android.net.Uri.parse(item.streamUrl).host.isNullOrBlank()
+                }
+                .map { item ->
+                    ExternalAudioEntity(
+                        stableId = "iptv-channel:${item.stableId}",
+                        channelStableId = item.stableId,
+                        tvgId = item.tvgId,
+                        normalizedName = com.example.data.iptv.M3uParser.normalizeName(item.name),
+                        title = item.name,
+                        streamUrl = item.streamUrl,
+                        language = null,
+                        commentator = "من اشتراك IPTV الحالي",
+                        bitrate = "قناة IPTV"
+                    )
+                }
+            val configuredAudioTracks = repository.getAllExternalAudio()
+            _availableAudioTracks.value = (iptvChannels + configuredAudioTracks)
+                .distinctBy { it.streamUrl.trim() }
         }
     }
 
