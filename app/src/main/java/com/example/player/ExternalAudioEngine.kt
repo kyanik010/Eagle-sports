@@ -2,6 +2,7 @@ package com.example.player
 
 import android.content.Context
 import android.net.Uri
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -93,6 +94,14 @@ class ExternalAudioEngine(
         val player = ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setLoadControl(loadControl)
+            .build()
+
+        // External audio may come from a regular live IPTV channel URL. Disable
+        // video track selection so this secondary player does not decode/render
+        // a second video stream while the main player continues showing video.
+        player.trackSelectionParameters = player.trackSelectionParameters
+            .buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
             .build()
 
         player.addListener(object : Player.Listener {
