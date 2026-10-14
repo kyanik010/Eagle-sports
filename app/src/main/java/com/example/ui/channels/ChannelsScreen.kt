@@ -285,6 +285,7 @@ fun ChannelsScreen(
                 viewModel.onSearchQueryChanged("")
             })
             HeroBanner(
+                channel = channels.firstOrNull(),
                 onWatchNow = { channels.firstOrNull()?.let(onChannelSelected) }
             )
             Row(
@@ -492,7 +493,7 @@ private fun EagleHeader(onNavigateSettings: () -> Unit, onSearchClick: () -> Uni
 }
 
 @Composable
-private fun HeroBanner(onWatchNow: () -> Unit) {
+private fun HeroBanner(channel: ChannelEntity?, onWatchNow: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -504,18 +505,30 @@ private fun HeroBanner(onWatchNow: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Row(
-            modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(Color(0xFFEF4444))
+            modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(EagleGold.copy(alpha = 0.14f))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(Modifier.size(4.dp).clip(CircleShape).background(Color.White))
+            Icon(Icons.Default.LiveTv, contentDescription = null, tint = EagleGold, modifier = Modifier.size(10.dp))
             Spacer(Modifier.width(4.dp))
-            Text("مباشر الآن", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (channel != null) "من قنواتك" else "القنوات غير متاحة",
+                color = EagleGold,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
         Spacer(Modifier.height(2.dp))
-        Text("beIN SPORTS 4K 1", color = EagleText, fontSize = 15.sp, fontWeight = FontWeight.Black, maxLines = 1)
         Text(
-            "مباراة ريال مدريد وبرشلونة - الدوري الإسباني",
+            text = channel?.name ?: "لا توجد قنوات متاحة",
+            color = EagleText,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = if (channel != null) "اضغط لتشغيل هذه القناة" else "زامن القنوات من الإعدادات أولاً",
             color = EagleMuted,
             fontSize = 10.sp,
             maxLines = 1,
@@ -523,14 +536,25 @@ private fun HeroBanner(onWatchNow: () -> Unit) {
         )
         Spacer(Modifier.height(5.dp))
         Row(
-            modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(EagleGold)
-                .focusable()
-                .clickable(onClick = onWatchNow).padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.clip(RoundedCornerShape(6.dp))
+                .background(if (channel != null) EagleGold else EagleBorder)
+                .then(if (channel != null) Modifier.focusable().clickable(onClick = onWatchNow) else Modifier)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = EagleBackground, modifier = Modifier.size(13.dp))
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = if (channel != null) EagleBackground else EagleMuted,
+                modifier = Modifier.size(13.dp)
+            )
             Spacer(Modifier.width(4.dp))
-            Text("شاهد الآن", color = EagleBackground, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (channel != null) "شاهد الآن" else "غير متاح",
+                color = if (channel != null) EagleBackground else EagleMuted,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
