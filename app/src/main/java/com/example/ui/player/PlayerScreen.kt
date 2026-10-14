@@ -732,6 +732,7 @@ private fun DelayStepButton(
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(9.dp))
+            .focusable()
             .clickable(enabled = enabled, onClick = onClick),
         color = if (enabled) NavySurface else NavyDark,
         border = androidx.compose.foundation.BorderStroke(1.dp, if (enabled) NavyBorder else NavyBorder.copy(alpha = 0.4f))
