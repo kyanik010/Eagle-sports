@@ -280,7 +280,7 @@ fun ChannelsScreen(
                 modifier = Modifier.weight(1f)
             )
         } else {
-            EagleHeader(onSearchClick = {
+            EagleHeader(onNavigateSettings = onNavigateSettings, onSearchClick = {
                 showSearch = true
                 viewModel.onSearchQueryChanged("")
             })
@@ -452,7 +452,7 @@ fun ChannelsScreen(
 }
 
 @Composable
-private fun EagleHeader(onSearchClick: () -> Unit) {
+private fun EagleHeader(onNavigateSettings: () -> Unit, onSearchClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .background(EagleBackground.copy(alpha = 0.94f))
