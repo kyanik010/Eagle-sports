@@ -50,6 +50,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
+import android.provider.Settings
+import java.security.MessageDigest
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +85,20 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val deviceId = remember {
+        val androidId = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID
+        ).orEmpty().trim()
+        if (androidId.isEmpty()) {
+            "EV-UNAVAILABLE"
+        } else {
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(("streamvault-device:" + androidId).toByteArray(Charsets.UTF_8))
+            "EV-" + digest.take(9).joinToString("") { "%02X".format(it) }
+        }
+    }
 
     if (uiState is LoginUiState.Success) {
         onLoginSuccess()
@@ -177,7 +194,56 @@ fun LoginScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = NavyDark.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, GoldPrimary.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "معرّف الجهاز",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    text = deviceId,
+                                    color = GoldPrimary,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = "للتواصل مع الدعم امسح رمز QR",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                            Image(
+                                painter = painterResource(id = R.drawable.eagle_support_qr),
+                                contentDescription = "رمز QR للتواصل مع الدعم",
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.White)
+                                    .padding(3.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Xtream server address
                     OutlinedTextField(
