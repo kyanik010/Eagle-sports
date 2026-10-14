@@ -544,7 +544,7 @@ private fun CategoryCard(
     val pressed by interactionSource.collectIsPressedAsState()
     val focused by interactionSource.collectIsFocusedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.96f else 1f,
+        targetValue = when { pressed -> 0.97f; focused -> 1.02f; else -> 1f },
         animationSpec = tween(durationMillis = 120),
         label = "categoryPressScale"
     )
@@ -562,7 +562,7 @@ private fun CategoryCard(
                 .clip(RoundedCornerShape(12.dp))
                 .background(Brush.linearGradient(gradient))
                 .border(
-                    width = if (pressed || focused) 2.dp else 1.dp,
+                    width = when { pressed -> 2.dp; focused -> 3.dp; else -> 1.dp },
                     color = if (pressed || focused) EagleGold else EagleBorder,
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -572,6 +572,13 @@ private fun CategoryCard(
                 .padding(10.dp)
                 .testTag("category_card_$index")
         ) {
+            if (focused) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                        .background(EagleGold.copy(alpha = 0.14f), RoundedCornerShape(10.dp))
+                        .testTag("category_focus_highlight_$index")
+                )
+            }
             Icon(
                 imageVector = if (index == 1) Icons.Default.SportsSoccer else Icons.Default.LiveTv,
                 contentDescription = null,
