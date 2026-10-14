@@ -204,37 +204,33 @@ fun LoginScreen(
                             1.dp, GoldPrimary.copy(alpha = 0.3f)
                         )
                     ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "معرّف الجهاز",
-                                    color = TextSecondary,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Text(
-                                    text = deviceId,
-                                    color = GoldPrimary,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Text(
-                                    text = "للتواصل مع الدعم امسح رمز QR",
-                                    color = TextSecondary,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
+                            Text(
+                                text = "للاشتراك في IPTV Premium",
+                                color = GoldPrimary,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "تواصل مع الدعم عبر مسح QR",
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.labelSmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
                             Image(
                                 painter = painterResource(id = R.drawable.eagle_support_qr),
-                                contentDescription = "رمز QR للتواصل مع الدعم",
+                                contentDescription = "رمز QR للتواصل مع الدعم والاشتراك في IPTV Premium",
                                 modifier = Modifier
-                                    .size(76.dp)
+                                    .size(112.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color.White)
                                     .padding(3.dp),
