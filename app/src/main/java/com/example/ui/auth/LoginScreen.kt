@@ -156,8 +156,7 @@ fun LoginScreen(
                         }
                         Column(
                             modifier = Modifier
-                                .weight(1.15f)
-                                .verticalScroll(rememberScrollState()),
+                                .weight(1.15f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             LoginFields(
