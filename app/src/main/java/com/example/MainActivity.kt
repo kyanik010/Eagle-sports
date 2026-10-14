@@ -155,6 +155,9 @@ fun EagleSportsAppContent() {
                     onBack = {
                         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                     },
+                    onNavigateSettings = {
+                        backStack.add(AppDestination.Settings)
+                    },
                     channelListState = channelListState,
                     groupListState = groupListState
                 )
