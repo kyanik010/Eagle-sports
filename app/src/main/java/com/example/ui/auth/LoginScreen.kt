@@ -167,10 +167,10 @@ fun LoginScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.eagle_x2_header),
+                            painter = painterResource(id = R.drawable.eagle_sports_icon),
                             contentDescription = "شعار إيغل سبورتس",
                             modifier = Modifier.size(70.dp),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Fit
                         )
                     }
 
