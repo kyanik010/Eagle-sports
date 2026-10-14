@@ -1,5 +1,7 @@
 package com.example.ui.channels
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -127,11 +129,17 @@ fun ChannelsScreen(
     val showLogos by viewModel.showLogos.collectAsState()
     val showNumbers by viewModel.showNumbers.collectAsState()
     val totalCount by viewModel.totalCount.collectAsState()
-    var activeCategory by remember { mutableStateOf<String?>(null) }
+    var activeCategory by remember { mutableStateOf(selectedGroup.takeIf { it != "All" }) }
+    var showSearch by remember { mutableStateOf(searchQuery.isNotBlank()) }
     var sheetSearch by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val configuration = LocalConfiguration.current
     val sheetHeight = (configuration.screenHeightDp * 0.85f).dp
+
+    BackHandler(enabled = !isFavoritesOnly && showSearch) {
+        showSearch = false
+        viewModel.onSearchQueryChanged("")
+    }
 
     Column(
         modifier = Modifier
@@ -194,8 +202,65 @@ fun ChannelsScreen(
                 onToggleFavorite = viewModel::toggleFavorite,
                 modifier = Modifier.weight(1f)
             )
+        } else if (showSearch) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        showSearch = false
+                        viewModel.onSearchQueryChanged("")
+                    },
+                    modifier = Modifier.testTag("channels_search_back_button")
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = EagleGold)
+                }
+                Text(
+                    text = "البحث عن القنوات",
+                    modifier = Modifier.weight(1f),
+                    color = EagleGold,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "مسح البحث", tint = EagleMuted)
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::onSearchQueryChanged,
+                placeholder = { Text("ابحث باسم القناة أو رقمها...", color = EagleMuted) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = EagleGold) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                    .testTag("channel_search_input"),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = EagleGold,
+                    unfocusedBorderColor = EagleBorder,
+                    focusedTextColor = EagleText,
+                    unfocusedTextColor = EagleText,
+                    cursorColor = EagleGold
+                )
+            )
+            ChannelResults(
+                channels = channels,
+                isFavoritesOnly = false,
+                listState = channelListState,
+                showLogos = showLogos,
+                showNumbers = showNumbers,
+                onChannelSelected = onChannelSelected,
+                onToggleFavorite = viewModel::toggleFavorite,
+                modifier = Modifier.weight(1f)
+            )
         } else {
-            EagleHeader()
+            EagleHeader(onSearchClick = {
+                showSearch = true
+                viewModel.onSearchQueryChanged("")
+            })
             HeroBanner(
                 onWatchNow = { channels.firstOrNull()?.let(onChannelSelected) }
             )
@@ -362,7 +427,7 @@ fun ChannelsScreen(
 }
 
 @Composable
-private fun EagleHeader() {
+private fun EagleHeader(onSearchClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .background(EagleBackground.copy(alpha = 0.94f))
@@ -376,7 +441,9 @@ private fun EagleHeader() {
             Text("Eagle Sports", color = EagleGold, fontSize = 17.sp, fontWeight = FontWeight.Black)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(Icons.Default.Search, contentDescription = "بحث", tint = EagleMuted, modifier = Modifier.size(18.dp))
+            IconButton(onClick = onSearchClick, modifier = Modifier.size(32.dp).testTag("channels_header_search_button")) {
+                Icon(Icons.Default.Search, contentDescription = "بحث", tint = EagleMuted, modifier = Modifier.size(18.dp))
+            }
             Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = EagleMuted, modifier = Modifier.size(18.dp))
             Box(modifier = Modifier.padding(start = 2.dp).size(32.dp)) {
                 Box(
