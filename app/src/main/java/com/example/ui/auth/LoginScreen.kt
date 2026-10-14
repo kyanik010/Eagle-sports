@@ -50,9 +50,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalContext
-import android.provider.Settings
-import java.security.MessageDigest
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,21 +82,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    val deviceId = remember {
-        val androidId = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ANDROID_ID
-        ).orEmpty().trim()
-        if (androidId.isEmpty()) {
-            "EV-UNAVAILABLE"
-        } else {
-            val digest = MessageDigest.getInstance("SHA-256")
-                .digest(("streamvault-device:" + androidId).toByteArray(Charsets.UTF_8))
-            "EV-" + digest.take(9).joinToString("") { "%02X".format(it) }
-        }
-    }
-
     if (uiState is LoginUiState.Success) {
         onLoginSuccess()
     }
