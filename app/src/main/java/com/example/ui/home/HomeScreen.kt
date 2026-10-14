@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,7 +80,17 @@ fun HomeScreen(
     onNavigateFavorites: () -> Unit,
     onNavigateSettings: () -> Unit
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isTelevision = (configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
+    val initialFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isTelevision) {
+        if (isTelevision) {
+            kotlinx.coroutines.yield()
+            runCatching { initialFocusRequester.requestFocus() }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -157,6 +168,7 @@ fun HomeScreen(
                             accentColor = GoldPrimary,
                             testTag = "menu_channels",
                             compact = true,
+                            focusRequester = initialFocusRequester,
                             onClick = onNavigateChannels
                         )
                         HomeMenuCard(
@@ -211,6 +223,7 @@ fun HomeScreen(
                         icon = Icons.Default.LiveTv,
                         accentColor = GoldPrimary,
                         testTag = "menu_channels",
+                        focusRequester = initialFocusRequester,
                         onClick = onNavigateChannels
                     )
                     HomeMenuCard(
@@ -459,6 +472,7 @@ private fun HomeMenuCard(
     accentColor: Color,
     testTag: String,
     compact: Boolean = false,
+    focusRequester: FocusRequester? = null,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -472,6 +486,7 @@ private fun HomeMenuCard(
             .height(if (compact) 78.dp else 82.dp)
             .clip(RoundedCornerShape(18.dp))
             .border(if (isFocused) 2.dp else 1.dp, borderColor, RoundedCornerShape(18.dp))
+            .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
             .focusable(interactionSource = interactionSource)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .testTag(testTag),
