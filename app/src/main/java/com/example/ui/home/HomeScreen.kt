@@ -321,6 +321,7 @@ private fun HeroBanner(onClick: () -> Unit, height: Int) {
             .height(height.dp)
             .clip(RoundedCornerShape(22.dp))
             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(22.dp))
+            .focusable()
             .clickable(onClick = onClick)
             .testTag("home_hero_banner")
     ) {
