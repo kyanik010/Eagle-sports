@@ -118,6 +118,7 @@ fun ChannelsScreen(
     isFavoritesOnly: Boolean = false,
     onChannelSelected: (ChannelEntity) -> Unit,
     onBack: () -> Unit,
+    onNavigateSettings: () -> Unit,
     channelListState: LazyListState,
     groupListState: LazyListState
 ) {
@@ -444,7 +445,9 @@ private fun EagleHeader(onSearchClick: () -> Unit) {
             IconButton(onClick = onSearchClick, modifier = Modifier.size(32.dp).testTag("channels_header_search_button")) {
                 Icon(Icons.Default.Search, contentDescription = "بحث", tint = EagleMuted, modifier = Modifier.size(18.dp))
             }
-            Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = EagleMuted, modifier = Modifier.size(18.dp))
+            IconButton(onClick = onNavigateSettings, modifier = Modifier.size(32.dp).testTag("channels_header_settings_button")) {
+                Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = EagleMuted, modifier = Modifier.size(18.dp))
+            }
             Box(modifier = Modifier.padding(start = 2.dp).size(32.dp)) {
                 Box(
                     modifier = Modifier.fillMaxSize().clip(CircleShape)
@@ -516,6 +519,7 @@ private fun CategoryCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val focused by interactionSource.collectIsFocusedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.96f else 1f,
         animationSpec = tween(durationMillis = 120),
@@ -535,10 +539,11 @@ private fun CategoryCard(
                 .clip(RoundedCornerShape(12.dp))
                 .background(Brush.linearGradient(gradient))
                 .border(
-                    width = if (pressed) 2.dp else 1.dp,
-                    color = if (pressed) EagleGold else EagleBorder,
+                    width = if (pressed || focused) 2.dp else 1.dp,
+                    color = if (pressed || focused) EagleGold else EagleBorder,
                     shape = RoundedCornerShape(12.dp)
                 )
+                .focusable(interactionSource = interactionSource)
                 .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
                 .padding(10.dp)
                 .testTag("category_card_$index")
