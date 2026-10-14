@@ -144,7 +144,7 @@ fun ChannelsScreen(
 
     LaunchedEffect(isTelevision, showSearch, activeCategory, groups.size) {
         if (isTelevision) {
-            kotlinx.coroutines.yield()
+            kotlinx.coroutines.delay(250)
             runCatching {
                 when {
                     showSearch -> searchFocusRequester.requestFocus()
@@ -521,6 +521,7 @@ private fun HeroBanner(onWatchNow: () -> Unit) {
         Spacer(Modifier.height(5.dp))
         Row(
             modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(EagleGold)
+                .focusable()
                 .clickable(onClick = onWatchNow).padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
