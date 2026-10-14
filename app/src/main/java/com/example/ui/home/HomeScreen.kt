@@ -387,7 +387,7 @@ private fun SectionHeading(title: String, trailing: String, onTrailingClick: () 
             color = GoldPrimary,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onTrailingClick).padding(horizontal = 8.dp, vertical = 5.dp)
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).focusable().clickable(onClick = onTrailingClick).padding(horizontal = 8.dp, vertical = 5.dp)
         )
     }
 }
@@ -402,6 +402,7 @@ private fun FeaturedChannelCard(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .border(1.dp, Color.White.copy(alpha = 0.09f), RoundedCornerShape(14.dp))
+            .focusable()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xCC141923))
