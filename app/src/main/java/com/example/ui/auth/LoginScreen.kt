@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Visibility
@@ -76,6 +77,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var host by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -177,6 +179,43 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
+                    // Xtream server address
+                    OutlinedTextField(
+                        value = host,
+                        onValueChange = {
+                            host = it
+                            if (uiState is LoginUiState.Error) viewModel.clearError()
+                        },
+                        label = { Text("عنوان السيرفر") },
+                        placeholder = { Text("http://example.com:8080") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Language, contentDescription = null, tint = GoldPrimary)
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GoldPrimary,
+                            unfocusedBorderColor = TextMuted.copy(alpha = 0.4f),
+                            focusedLabelColor = GoldPrimary,
+                            unfocusedLabelColor = TextSecondary,
+                            cursorColor = GoldPrimary,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("server_input")
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     // Username Input
                     OutlinedTextField(
                         value = username,
@@ -244,7 +283,7 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                viewModel.login(username, password)
+                                viewModel.login(host, username, password)
                             }
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -279,7 +318,7 @@ fun LoginScreen(
                     Button(
                         onClick = {
                             focusManager.clearFocus()
-                            viewModel.login(username, password)
+                            viewModel.login(host, username, password)
                         },
                         enabled = !isLoading,
                         modifier = Modifier

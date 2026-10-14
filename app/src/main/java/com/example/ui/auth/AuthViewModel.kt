@@ -29,10 +29,15 @@ class AuthViewModel(
 
     private val iptvProvider = DefaultIptvProvider()
 
-    fun login(username: String, pass: String) {
+    fun login(host: String, username: String, pass: String) {
+        val trimmedHost = host.trim()
         val trimmedUser = username.trim()
         val enteredPass = pass
 
+        if (trimmedHost.isEmpty()) {
+            _uiState.value = LoginUiState.Error("يرجى إدخال عنوان السيرفر")
+            return
+        }
         if (trimmedUser.isEmpty()) {
             _uiState.value = LoginUiState.Error("يرجى إدخال اسم المستخدم")
             return
@@ -44,9 +49,9 @@ class AuthViewModel(
 
         _uiState.value = LoginUiState.Loading
         viewModelScope.launch {
-            // OkHttp execute() is blocking; never run the activation request on Android's main thread.
+            // OkHttp execute() is blocking; validate Xtream credentials off the main thread.
             val result = withContext(Dispatchers.IO) {
-                iptvProvider.authenticate(trimmedUser, enteredPass)
+                iptvProvider.authenticate(trimmedHost, trimmedUser, enteredPass)
             }
             if (result.isSuccess) {
                 val session = result.getOrThrow()

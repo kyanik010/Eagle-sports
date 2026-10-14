@@ -73,11 +73,7 @@ class ChannelRepository(
         return@withContext audioDao.getAllAudio().firstOrNull().orEmpty()
     }
 
-    /**
-     * Revalidates credentials against the enabled host list once when the saved host fails.
-     * The activation function tries the configured hosts and returns the currently working host.
-     * The optional external audio URL is preserved by the backend and remains non-blocking.
-     */
+    /** Revalidates saved Xtream credentials directly against the saved IPTV host. */
     private suspend fun fetchChannelsWithHostRefresh(
         session: UserSession
     ): Pair<UserSession, Result<List<ChannelEntity>>> {
@@ -89,7 +85,7 @@ class ChannelRepository(
             return session to firstAttempt
         }
 
-        val refreshResult = iptvProvider.authenticate(session.username, password)
+        val refreshResult = iptvProvider.authenticate(session.iptvHost, session.username, password)
         if (refreshResult.isFailure) {
             val original = firstAttempt.exceptionOrNull()?.message ?: "فشلت مزامنة القنوات"
             val refreshError = refreshResult.exceptionOrNull()?.message ?: "فشل التحقق من الخادم"
@@ -99,6 +95,7 @@ class ChannelRepository(
         }
 
         val refreshedSession = refreshResult.getOrThrow()
+            .copy(externalAudioUrl = session.externalAudioUrl)
         preferencesManager.saveSession(refreshedSession)
         val retry = iptvProvider.fetchChannels(refreshedSession)
         if (retry.isFailure) {
@@ -111,17 +108,17 @@ class ChannelRepository(
     }
 
     /**
-     * Refreshes the subscription configuration so an M3U URL added in the admin dashboard
-     * after login is picked up without requiring the user to sign in again.
+     * Refreshes the saved Xtream session without discarding a separately configured audio M3U URL.
      */
     private suspend fun refreshAudioSession(savedSession: UserSession): Pair<UserSession, String?> {
         val password = savedSession.password
         if (savedSession.username.isBlank() || password.isNullOrBlank()) {
             return savedSession to "تعذّر تحديث إعدادات صوت الاشتراك: بيانات الدخول المحفوظة غير موجودة"
         }
-        val refreshed = iptvProvider.authenticate(savedSession.username, password)
+        val refreshed = iptvProvider.authenticate(savedSession.iptvHost, savedSession.username, password)
         return if (refreshed.isSuccess) {
             val session = refreshed.getOrThrow()
+                .copy(externalAudioUrl = savedSession.externalAudioUrl)
             preferencesManager.saveSession(session)
             session to null
         } else {
@@ -143,7 +140,7 @@ class ChannelRepository(
             val savedSession = preferencesManager.userSession.firstOrNull()
                 ?: return@withContext Result.failure(IllegalStateException("لا توجد جلسة مستخدم نشطة"))
 
-            // If the locally saved host fails, revalidate once through Supabase and retry on its selected host.
+            // If the saved host fails, revalidate once directly against that Xtream server and retry.
             onProgress(SyncState.Syncing("جارٍ تنزيل القنوات...", 0.3f))
             val (session, channelsResult) = fetchChannelsWithHostRefresh(savedSession)
             if (channelsResult.isFailure) {

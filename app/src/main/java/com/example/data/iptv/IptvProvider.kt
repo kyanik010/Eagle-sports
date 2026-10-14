@@ -2,17 +2,15 @@ package com.example.data.iptv
 
 import com.example.data.model.ChannelEntity
 import com.example.data.model.UserSession
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 interface IptvProvider {
-    suspend fun authenticate(username: String, password: String): Result<UserSession>
+    suspend fun authenticate(host: String, username: String, password: String): Result<UserSession>
     suspend fun fetchChannels(session: UserSession): Result<List<ChannelEntity>>
     suspend fun fetchExternalAudio(externalAudioUrl: String): Result<List<com.example.data.model.ExternalAudioEntity>>
 }
@@ -26,116 +24,105 @@ class DefaultIptvProvider(
 ) : IptvProvider {
 
     companion object {
-        private const val ACTIVATION_URL =
-            "https://quaftlmuobshbnlhctmf.supabase.co/functions/v1/device-activation"
-        // Supabase publishable key is intended for client applications.
-        private const val SUPABASE_PUBLISHABLE_KEY =
-            "sb_publishable_6mdnO-ezptIZzRKNfEbzaA_e9B-ulL5"
         private const val USER_AGENT = "EagleSports/1.0 (Android)"
     }
 
-    override suspend fun authenticate(username: String, password: String): Result<UserSession> {
+    override suspend fun authenticate(
+        host: String,
+        username: String,
+        password: String
+    ): Result<UserSession> {
+        val enteredHost = host.trim().trimEnd('/')
         val user = username.trim()
         val pass = password
 
-        if (user.isEmpty() || pass.isEmpty()) {
-            return Result.failure(IllegalArgumentException("Username and Password cannot be empty"))
+        if (enteredHost.isBlank()) {
+            return Result.failure(IllegalArgumentException("يرجى إدخال عنوان السيرفر"))
+        }
+        if (user.isBlank() || pass.isBlank()) {
+            return Result.failure(IllegalArgumentException("يرجى إدخال اسم المستخدم وكلمة المرور"))
         }
 
-        return try {
-            val requestBody = JSONObject()
-                .put("username", user)
-                .put("password", pass)
-                .toString()
-                .toRequestBody("application/json; charset=utf-8".toMediaType())
+        val normalizedHost = when {
+            enteredHost.startsWith("https://", ignoreCase = true) ||
+                enteredHost.startsWith("http://", ignoreCase = true) -> enteredHost
+            else -> "http://$enteredHost"
+        }
+        val encodedUser = URLEncoder.encode(user, "UTF-8")
+        val encodedPass = URLEncoder.encode(pass, "UTF-8")
+        val url = "$normalizedHost/player_api.php?username=$encodedUser&password=$encodedPass"
 
+        return try {
             val request = Request.Builder()
-                .url(ACTIVATION_URL)
-                .post(requestBody)
+                .url(url)
                 .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
-                .header("apikey", SUPABASE_PUBLISHABLE_KEY)
                 .header("User-Agent", USER_AGENT)
                 .build()
 
             client.newCall(request).execute().use { response ->
                 val raw = response.body?.string().orEmpty()
-                val json = runCatching { JSONObject(raw) }.getOrNull()
-
                 if (!response.isSuccessful) {
-                    val error = json?.optString("error").orEmpty()
                     return Result.failure(
-                        IllegalStateException(
-                            "device-activation HTTP ${response.code}: " +
-                                error.ifBlank { raw.take(200).ifBlank { "empty response" } }
-                        )
+                        IllegalStateException("فشل الاتصال بسيرفر IPTV (HTTP ${response.code})")
                     )
                 }
 
-                if (json == null) {
-                    return Result.failure(
-                        IllegalStateException("device-activation returned invalid JSON")
-                    )
-                }
-
-                val status = json.optString("status", "unknown")
-                val activated = json.optBoolean("activated", false)
-                val config = json.optJSONObject("config")
-
-                if (!activated || config == null) {
-                    return Result.failure(
-                        IllegalStateException("device-activation: ${statusMessage(status)}")
-                    )
-                }
-
-                val video = config.optJSONObject("video")
+                val json = runCatching { JSONObject(raw) }.getOrNull()
                     ?: return Result.failure(
-                        IllegalStateException("device-activation: missing video configuration")
+                        IllegalStateException("السيرفر لم يُرجع بيانات Xtream صحيحة")
+                    )
+                val userInfo = json.optJSONObject("user_info")
+                    ?: return Result.failure(
+                        IllegalStateException("السيرفر لا يدعم استجابة Xtream Codes المطلوبة")
                     )
 
-                val host = video.optString("server_url").trim().trimEnd('/')
-                val resolvedUser = video.optString("username").trim()
-                val resolvedPass = video.optString("password")
-
-                if (host.isBlank() || resolvedUser.isBlank() || resolvedPass.isBlank()) {
+                if (userInfo.optInt("auth", 0) != 1) {
                     return Result.failure(
-                        IllegalStateException("device-activation: incomplete video configuration")
+                        IllegalStateException("بيانات الدخول غير صحيحة أو أن الاشتراك غير صالح")
                     )
                 }
 
-                val audio = config.optJSONObject("audio")
-                val audioUrl = audio?.optString("m3u_url")?.takeIf { it.isNotBlank() }
+                val status = userInfo.optString("status", "Active")
+                if (!status.equals("Active", ignoreCase = true) &&
+                    !status.equals("Trial", ignoreCase = true)
+                ) {
+                    return Result.failure(
+                        IllegalStateException("الاشتراك غير نشط: $status")
+                    )
+                }
+
+                val expDate = userInfo.optString("exp_date")
+                val expiry = expDate.toLongOrNull()
+                    ?.takeIf { it > 0L }
+                    ?.let {
+                        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            .format(java.util.Date(it * 1000L))
+                    } ?: "Never"
+                val serverInfo = json.optJSONObject("server_info")
 
                 Result.success(
                     UserSession(
-                        username = resolvedUser,
-                        password = resolvedPass,
-                        token = json.optString("device_id").takeIf { it.isNotBlank() },
-                        iptvHost = host,
+                        username = user,
+                        password = pass,
+                        token = null,
+                        iptvHost = normalizedHost,
                         status = status,
-                        expiryDate = json.optString("expires_at").ifBlank { "Never" },
-                        externalAudioUrl = audioUrl
+                        expiryDate = expiry,
+                        externalAudioUrl = null,
+                        maxConnections = userInfo.optInt("max_connections", 1).coerceAtLeast(1),
+                        activeConnections = userInfo.optInt("active_cons", 0).coerceAtLeast(0),
+                        serverTime = serverInfo?.optString("time_now")?.takeIf { !it.isNullOrBlank() }
                     )
                 )
             }
         } catch (e: Exception) {
             Result.failure(
                 IllegalStateException(
-                    "device-activation connection failed: ${e.message ?: e.javaClass.simpleName}",
+                    "تعذّر الاتصال بسيرفر IPTV: ${e.message ?: e.javaClass.simpleName}",
                     e
                 )
             )
         }
-    }
-
-    private fun statusMessage(status: String): String = when (status) {
-        "pending_configuration" -> "pending_configuration (Host is not configured/enabled)"
-        "host_disabled" -> "host_disabled (assigned Host is disabled or missing)"
-        "expired" -> "expired (subscription/device has expired)"
-        "ambiguous_credentials" -> "ambiguous_credentials (multiple matching accounts)"
-        "suspended", "disabled", "blocked" -> "${status} (device is not active)"
-        "unknown" -> "unknown (backend did not return a status)"
-        else -> status
     }
 
     override suspend fun fetchChannels(session: UserSession): Result<List<ChannelEntity>> {
