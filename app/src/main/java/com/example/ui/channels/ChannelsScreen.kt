@@ -440,7 +440,8 @@ fun ChannelsScreen(
                     showNumbers = showNumbers,
                     onChannelSelected = onChannelSelected,
                     onToggleFavorite = viewModel::toggleFavorite,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    firstItemFocusRequester = channelFocusRequester
                 )
             }
         }
