@@ -200,21 +200,10 @@ fun PlayerScreen(
             .clickable { if (!isTelevision) showControls = !showControls else showControls = true }
             .testTag("player_screen")
     ) {
-        // ExoPlayer Video View
+        // libmpv video surface. Video and optional external commentary share
+        // the same native playback session; delay is changed only by user controls.
         AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    useController = false
-                    player = viewModel.dualPlayerController.getVideoPlayer()
-                }
-            },
-            update = { playerView ->
-                playerView.player = viewModel.dualPlayerController.getVideoPlayer()
-            },
+            factory = { ctx -> viewModel.dualPlayerController.mpvEngine.createVideoView(ctx) },
             modifier = Modifier.fillMaxSize()
         )
 
