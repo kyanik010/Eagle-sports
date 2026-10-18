@@ -25,12 +25,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val dualPlayerController = DualPlayerController(application, viewModelScope)
 
     val currentChannel: StateFlow<ChannelEntity?> = dualPlayerController.currentChannel
-    val videoStatus: StateFlow<PlaybackStatus> = dualPlayerController.mpvEngine.status
-    val audioStatus: StateFlow<PlaybackStatus> = dualPlayerController.mpvEngine.audioStatus
+    val videoStatus: StateFlow<PlaybackStatus> = dualPlayerController.videoEngine.status
+    val audioStatus: StateFlow<PlaybackStatus> = dualPlayerController.audioEngine.status
     val audioMode: StateFlow<AudioSourceMode> = dualPlayerController.audioMode
-    val audioDelayMs: StateFlow<Int> = dualPlayerController.mpvEngine.manualDelayMs
-    val videoError: StateFlow<String?> = dualPlayerController.mpvEngine.error
-    val audioError: StateFlow<String?> = dualPlayerController.mpvEngine.audioError
+    val audioDelayMs: StateFlow<Int> = dualPlayerController.audioEngine.delayMs
+    val videoError: StateFlow<String?> = dualPlayerController.videoEngine.errorMessage
+    val audioError: StateFlow<String?> = dualPlayerController.audioEngine.errorMessage
 
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
@@ -101,7 +101,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun retryVideo() {
-        currentChannel.value?.let { dualPlayerController.mpvEngine.playVideo(it.streamUrl) }
+        currentChannel.value?.let { dualPlayerController.videoEngine.playChannel(it) }
     }
 
     fun channelUp() {
@@ -153,9 +153,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun adjustAudioDelay(deltaMs: Int) {
-        dualPlayerController.mpvEngine.adjustManualDelay(deltaMs)
+        dualPlayerController.audioEngine.adjustDelay(deltaMs)
         viewModelScope.launch {
-            preferencesManager.setExternalAudioDelayMs(dualPlayerController.mpvEngine.manualDelayMs.value)
+            preferencesManager.setExternalAudioDelayMs(dualPlayerController.audioEngine.delayMs.value)
         }
     }
 
