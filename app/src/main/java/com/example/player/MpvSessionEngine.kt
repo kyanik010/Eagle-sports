@@ -61,8 +61,10 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setOptionString("demuxer-max-back-bytes", "16MiB")
             mpv.setOptionString("keep-open", "yes")
             mpv.setOptionString("audio-fallback-to-null", "yes")
+            // Video output is an initialization option, not a runtime property.
+            mpv.setOptionString("vo", "gpu")
+            mpv.setOptionString("force-window", "yes")
             mpv.init()
-            mpv.setPropertyString("vo", "gpu")
             mpv.setPropertyBoolean("pause", true)
         }.onFailure {
             _error.value = "تعذر تهيئة محرك libmpv: ${it.message ?: it.javaClass.simpleName}"
@@ -83,8 +85,6 @@ class MpvSessionEngine(context: Context) : Closeable {
                 if (released || surfaceAttached) return
                 runCatching {
                     mpv.attachSurface(holder.surface)
-                    mpv.setPropertyString("vo", "gpu")
-                    mpv.setPropertyBoolean("force-window", true)
                     surfaceAttached = true
                     activeVideoUrl?.let { loadVideo(it) }
                 }.onFailure {
@@ -100,11 +100,7 @@ class MpvSessionEngine(context: Context) : Closeable {
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 if (!released && surfaceAttached) {
-                    runCatching {
-                        mpv.setPropertyString("vo", "null")
-                        mpv.setPropertyBoolean("force-window", false)
-                        mpv.detachSurface()
-                    }
+                    runCatching { mpv.detachSurface() }
                     surfaceAttached = false
                 }
             }
@@ -125,17 +121,9 @@ class MpvSessionEngine(context: Context) : Closeable {
         _audioError.value = null
         _status.value = PlaybackStatus.PREPARING
         _error.value = null
-        runCatching {
-            mpv.setPropertyBoolean("pause", true)
-            mpv.command("loadfile", url, "replace")
-            mpv.setPropertyString("aid", "auto")
-            mpv.setPropertyDouble("audio-delay", 0.0)
-            mpv.setPropertyBoolean("pause", false)
-            _status.value = PlaybackStatus.PLAYING
-        }.onFailure {
-            _status.value = PlaybackStatus.ERROR
-            _error.value = "تعذر فتح البث: ${it.message ?: it.javaClass.simpleName}"
-        }
+        // Wait for the SurfaceView to attach before loading. Loading again from
+        // surfaceCreated caused duplicate requests and slow live-channel startup.
+        if (surfaceAttached) loadVideo(url)
     }
 
     /**
