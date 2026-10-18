@@ -321,10 +321,12 @@ fun PlayerScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (audioStatus == PlaybackStatus.ERROR) "خطأ في الصوت الخارجي (الفيديو يعمل)"
-                            else "التعليق الخارجي: ${audioDelayMs} مللي ثانية",
+                            text = if (audioStatus == PlaybackStatus.ERROR) {
+                                audioError ?: "تعذر تشغيل الصوت الخارجي؛ الفيديو مستمر."
+                            } else "التعليق الخارجي: ${audioDelayMs} مللي ثانية",
                             color = if (audioStatus == PlaybackStatus.ERROR) RedLive else CyanAccent,
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 2
                         )
                     }
                 }
