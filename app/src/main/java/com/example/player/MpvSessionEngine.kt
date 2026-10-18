@@ -131,15 +131,21 @@ class MpvSessionEngine(context: Context) : Closeable {
      * the newly added track. No independent audio player and no auto-sync loop.
      */
     @MainThread
-    fun addExternalAudio(url: String) {
-        if (released) return
+    fun addExternalAudio(url: String): Boolean {
+        if (released) {
+            _audioError.value = "محرك التشغيل مغلق"
+            _audioStatus.value = PlaybackStatus.ERROR
+            return false
+        }
         if (activeVideoUrl == null) {
-            _error.value = "شغّل الفيديو أولاً ثم أضف التعليق الخارجي"
-            return
+            _audioError.value = "شغّل الفيديو أولاً ثم أضف التعليق الخارجي"
+            _audioStatus.value = PlaybackStatus.ERROR
+            return false
         }
         if (!isHttpUrl(url)) {
-            _error.value = "رابط الصوت الخارجي غير صالح"
-            return
+            _audioError.value = "رابط الصوت الخارجي غير صالح"
+            _audioStatus.value = PlaybackStatus.ERROR
+            return false
         }
         activeAudioUrl = url
         _audioStatus.value = PlaybackStatus.PREPARING
@@ -152,12 +158,13 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setPropertyDouble("audio-delay", _manualDelayMs.value / 1000.0)
             mpv.setPropertyBoolean("pause", false)
             _audioStatus.value = PlaybackStatus.PLAYING
-        }.onFailure {
+            true
+        }.getOrElse {
             activeAudioUrl = null
             _audioStatus.value = PlaybackStatus.ERROR
             _audioError.value = "تعذر إضافة التعليق الخارجي: ${it.message ?: it.javaClass.simpleName}"
+            false
         }
-    }
 
     /** Manual audio offset only. Positive values delay commentary; negative values advance it. */
     @MainThread
