@@ -20,6 +20,7 @@ class DualPlayerController(
 ) {
     val videoEngine = VideoPlayerEngine(context, scope)
     val audioEngine = ExternalAudioEngine(context, scope)
+    val mpvEngine = MpvSessionEngine(context)
 
     private val _currentChannel = MutableStateFlow<ChannelEntity?>(null)
     val currentChannel: StateFlow<ChannelEntity?> = _currentChannel.asStateFlow()
@@ -36,11 +37,12 @@ class DualPlayerController(
         _currentChannel.value = channel
         // Stop any external audio from previous channel, revert to original audio by default
         audioEngine.stopExternalAudio()
-        videoEngine.setMuted(false)
+        mpvEngine.stop()
+        videoEngine.stop()
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
 
-        videoEngine.playChannel(channel)
+        mpvEngine.playVideo(channel.streamUrl)
     }
 
     /**
@@ -54,11 +56,10 @@ class DualPlayerController(
         _selectedExternalAudio.value = audio
         _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
 
-        // Mute video player's original audio stream so only external audio is heard
-        videoEngine.setMuted(true)
-
-        // Start external audio engine independently
-        audioEngine.playExternalAudio(audio)
+        // Add commentary to the same libmpv session as the live video.
+        // This keeps one playback clock and leaves delay entirely user-controlled.
+        audioEngine.stopExternalAudio()
+        mpvEngine.addExternalAudio(audio.streamUrl)
     }
 
     /**
@@ -68,16 +69,13 @@ class DualPlayerController(
      */
     fun selectOriginalAudio() {
         audioEngine.stopExternalAudio()
-        videoEngine.setMuted(false)
+        mpvEngine.clearExternalAudio()
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
     }
 
     fun togglePlayPause() {
-        videoEngine.togglePlayPause()
-        if (_audioMode.value is AudioSourceMode.External) {
-            audioEngine.togglePlayPause()
-        }
+        mpvEngine.togglePlayPause()
     }
 
     fun stopAll() {
@@ -86,6 +84,7 @@ class DualPlayerController(
     }
 
     fun release() {
+        mpvEngine.close()
         videoEngine.release()
         audioEngine.release()
     }
