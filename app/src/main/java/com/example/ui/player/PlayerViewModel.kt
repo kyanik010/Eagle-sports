@@ -25,12 +25,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val dualPlayerController = DualPlayerController(application, viewModelScope)
 
     val currentChannel: StateFlow<ChannelEntity?> = dualPlayerController.currentChannel
-    val videoStatus: StateFlow<PlaybackStatus> = dualPlayerController.videoEngine.status
-    val audioStatus: StateFlow<PlaybackStatus> = dualPlayerController.audioEngine.status
+    val videoStatus: StateFlow<PlaybackStatus> = dualPlayerController.mpvEngine.status
+    val audioStatus: StateFlow<PlaybackStatus> = dualPlayerController.mpvEngine.audioStatus
     val audioMode: StateFlow<AudioSourceMode> = dualPlayerController.audioMode
-    val audioDelayMs: StateFlow<Int> = dualPlayerController.audioEngine.delayMs
-    val videoError: StateFlow<String?> = dualPlayerController.videoEngine.errorMessage
-    val audioError: StateFlow<String?> = dualPlayerController.audioEngine.errorMessage
+    val audioDelayMs: StateFlow<Int> = dualPlayerController.mpvEngine.manualDelayMs
+    val videoError: StateFlow<String?> = dualPlayerController.mpvEngine.error
+    val audioError: StateFlow<String?> = dualPlayerController.mpvEngine.audioError
 
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
@@ -153,9 +153,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun adjustAudioDelay(deltaMs: Int) {
-        dualPlayerController.audioEngine.adjustDelay(deltaMs)
+        dualPlayerController.mpvEngine.adjustManualDelay(deltaMs)
         viewModelScope.launch {
-            preferencesManager.setExternalAudioDelayMs(dualPlayerController.audioEngine.delayMs.value)
+            preferencesManager.setExternalAudioDelayMs(dualPlayerController.mpvEngine.manualDelayMs.value)
         }
     }
 
