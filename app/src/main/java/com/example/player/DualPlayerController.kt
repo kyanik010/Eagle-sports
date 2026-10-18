@@ -80,6 +80,7 @@ class DualPlayerController(
 
     fun stopAll() {
         audioEngine.stopExternalAudio()
+        mpvEngine.stop()
         videoEngine.stop()
     }
 
