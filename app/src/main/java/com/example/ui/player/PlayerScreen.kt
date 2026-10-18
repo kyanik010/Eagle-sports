@@ -200,10 +200,23 @@ fun PlayerScreen(
             .clickable { if (!isTelevision) showControls = !showControls else showControls = true }
             .testTag("player_screen")
     ) {
-        // libmpv video surface. Video and optional external commentary share
-        // the same native playback session; delay is changed only by user controls.
+        // Render the active Media3 ExoPlayer directly. PlayerView owns the video surface,
+        // avoiding the detached native surface that caused audio-only black-screen playback.
         AndroidView(
-            factory = { ctx -> viewModel.dualPlayerController.mpvEngine.createVideoView(ctx) },
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    useController = false
+                    player = viewModel.dualPlayerController.videoEngine.getPlayer()
+                    keepScreenOn = true
+                    layoutParams = FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                }
+            },
+            update = { playerView ->
+                playerView.player = viewModel.dualPlayerController.videoEngine.getPlayer()
+            },
             modifier = Modifier.fillMaxSize()
         )
 
