@@ -35,6 +35,7 @@ class DualPlayerController(
     fun playChannel(channel: ChannelEntity) {
         _currentChannel.value = channel
         audioEngine.stopExternalAudio()
+        videoEngine.setMuted(false)
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
         videoEngine.playChannel(channel)
@@ -46,12 +47,14 @@ class DualPlayerController(
         }
         // The external stream has its own Media3 instance. Never recreate or stop video.
         audioEngine.playExternalAudio(audio)
+        videoEngine.setMuted(true)
         _selectedExternalAudio.value = audio
         _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
     }
 
     fun selectOriginalAudio() {
         audioEngine.stopExternalAudio()
+        videoEngine.setMuted(false)
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
     }
@@ -62,6 +65,7 @@ class DualPlayerController(
 
     fun stopAll() {
         audioEngine.stopExternalAudio()
+        videoEngine.setMuted(false)
         videoEngine.stop()
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
