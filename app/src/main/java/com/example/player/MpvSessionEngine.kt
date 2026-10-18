@@ -257,6 +257,8 @@ class MpvSessionEngine(context: Context) : Closeable {
 
     override fun close() {
         if (released) return
+        // Detach native rendering before destroying the libmpv instance.
+        if (surfaceAttached) runCatching { mpv.detachSurface() }
         released = true
         activeVideoUrl = null
         activeAudioUrl = null
