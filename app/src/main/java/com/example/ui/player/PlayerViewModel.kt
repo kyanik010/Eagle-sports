@@ -101,7 +101,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun retryVideo() {
-        dualPlayerController.videoEngine.retryPlayback()
+        currentChannel.value?.let { dualPlayerController.mpvEngine.playVideo(it.streamUrl) }
     }
 
     fun channelUp() {
