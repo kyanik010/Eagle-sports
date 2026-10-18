@@ -34,6 +34,15 @@ class MpvSessionEngine(context: Context) : Closeable {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _audioError = MutableStateFlow<String?>(null)
+    val audioError: StateFlow<String?> = _audioError.asStateFlow()
+
+    private val _status = MutableStateFlow(PlaybackStatus.IDLE)
+    val status: StateFlow<PlaybackStatus> = _status.asStateFlow()
+
+    private val _audioStatus = MutableStateFlow(PlaybackStatus.IDLE)
+    val audioStatus: StateFlow<PlaybackStatus> = _audioStatus.asStateFlow()
+
     private var surfaceAttached = false
     private var activeVideoUrl: String? = null
     private var activeAudioUrl: String? = null
@@ -110,6 +119,9 @@ class MpvSessionEngine(context: Context) : Closeable {
         activeVideoUrl = url
         activeAudioUrl = null
         _manualDelayMs.value = 0
+        _audioStatus.value = PlaybackStatus.IDLE
+        _audioError.value = null
+        _status.value = PlaybackStatus.PREPARING
         _error.value = null
         runCatching {
             mpv.setPropertyBoolean("pause", true)
@@ -117,7 +129,9 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setPropertyString("aid", "auto")
             mpv.setPropertyDouble("audio-delay", 0.0)
             mpv.setPropertyBoolean("pause", false)
+            _status.value = PlaybackStatus.PLAYING
         }.onFailure {
+            _status.value = PlaybackStatus.ERROR
             _error.value = "تعذر فتح البث: ${it.message ?: it.javaClass.simpleName}"
         }
     }
@@ -138,6 +152,8 @@ class MpvSessionEngine(context: Context) : Closeable {
             return
         }
         activeAudioUrl = url
+        _audioStatus.value = PlaybackStatus.PREPARING
+        _audioError.value = null
         _error.value = null
         runCatching {
             mpv.command("audio-add", url, "select")
@@ -145,9 +161,11 @@ class MpvSessionEngine(context: Context) : Closeable {
             // this is not an automatic sync calculation.
             mpv.setPropertyDouble("audio-delay", _manualDelayMs.value / 1000.0)
             mpv.setPropertyBoolean("pause", false)
+            _audioStatus.value = PlaybackStatus.PLAYING
         }.onFailure {
             activeAudioUrl = null
-            _error.value = "تعذر إضافة التعليق الخارجي: ${it.message ?: it.javaClass.simpleName}"
+            _audioStatus.value = PlaybackStatus.ERROR
+            _audioError.value = "تعذر إضافة التعليق الخارجي: ${it.message ?: it.javaClass.simpleName}"
         }
     }
 
@@ -156,16 +174,16 @@ class MpvSessionEngine(context: Context) : Closeable {
     fun setManualDelayMs(requestedMs: Int) {
         if (released) return
         if (activeAudioUrl == null) {
-            _error.value = "اختر التعليق الخارجي قبل ضبط المزامنة"
+            _audioError.value = "اختر التعليق الخارجي قبل ضبط المزامنة"
             return
         }
         val clamped = requestedMs.coerceIn(-3000, 3000)
         runCatching {
             mpv.setPropertyDouble("audio-delay", clamped / 1000.0)
             _manualDelayMs.value = clamped
-            _error.value = null
+            _audioError.value = null
         }.onFailure {
-            _error.value = "تعذر تطبيق التأخير اليدوي: ${it.message ?: it.javaClass.simpleName}"
+            _audioError.value = "تعذر تطبيق التأخير اليدوي: ${it.message ?: it.javaClass.simpleName}"
         }
     }
 
@@ -177,6 +195,8 @@ class MpvSessionEngine(context: Context) : Closeable {
         if (released) return
         activeAudioUrl = null
         _manualDelayMs.value = 0
+        _audioStatus.value = PlaybackStatus.IDLE
+        _audioError.value = null
         runCatching {
             // Reload the current channel to remove added tracks deterministically.
             // Keep playback in the same session; never leave the previous commentary alive.
@@ -198,6 +218,7 @@ class MpvSessionEngine(context: Context) : Closeable {
         runCatching {
             val paused = mpv.getPropertyBoolean("pause") ?: false
             mpv.setPropertyBoolean("pause", !paused)
+            _status.value = if (paused) PlaybackStatus.PLAYING else PlaybackStatus.PAUSED
         }.onFailure {
             _error.value = "تعذر التحكم بالتشغيل: ${it.message ?: it.javaClass.simpleName}"
         }
@@ -209,6 +230,8 @@ class MpvSessionEngine(context: Context) : Closeable {
         activeVideoUrl = null
         activeAudioUrl = null
         _manualDelayMs.value = 0
+        _status.value = PlaybackStatus.IDLE
+        _audioStatus.value = PlaybackStatus.IDLE
         runCatching { mpv.command("stop") }
     }
 
@@ -219,7 +242,9 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setPropertyString("aid", "auto")
             mpv.setPropertyDouble("audio-delay", 0.0)
             mpv.setPropertyBoolean("pause", false)
+            _status.value = PlaybackStatus.PLAYING
         }.onFailure {
+            _status.value = PlaybackStatus.ERROR
             _error.value = "تعذر تحميل الفيديو: ${it.message ?: it.javaClass.simpleName}"
         }
     }
@@ -236,6 +261,8 @@ class MpvSessionEngine(context: Context) : Closeable {
         activeVideoUrl = null
         activeAudioUrl = null
         surfaceAttached = false
+        _status.value = PlaybackStatus.RELEASED
+        _audioStatus.value = PlaybackStatus.RELEASED
         runCatching { mpv.close() }
     }
 }
