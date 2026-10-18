@@ -157,7 +157,7 @@ class MpvSessionEngine(context: Context) : Closeable {
         _audioStatus.value = PlaybackStatus.PREPARING
         _audioError.value = null
         _error.value = null
-        runCatching {
+        return runCatching {
             mpv.command("audio-add", url, "select")
             // Reapply the user's explicit value after adding a late audio track;
             // this is not an automatic sync calculation.
