@@ -57,8 +57,9 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setOptionString("hwdec", "auto")
             mpv.setOptionString("msg-level", "all=warn")
             mpv.setOptionString("tls-verify", "yes")
-            mpv.setOptionString("demuxer-max-bytes", "64MiB")
-            mpv.setOptionString("demuxer-max-back-bytes", "16MiB")
+            // Keep the live demux cache bounded to reduce peak memory use on phones/TV boxes.
+            mpv.setOptionString("demuxer-max-bytes", "32MiB")
+            mpv.setOptionString("demuxer-max-back-bytes", "8MiB")
             mpv.setOptionString("keep-open", "yes")
             mpv.setOptionString("audio-fallback-to-null", "yes")
             // Video output is an initialization option, not a runtime property.
@@ -137,8 +138,13 @@ class MpvSessionEngine(context: Context) : Closeable {
             _audioStatus.value = PlaybackStatus.ERROR
             return false
         }
-        if (activeVideoUrl == null) {
-            _audioError.value = "شغّل الفيديو أولاً ثم أضف التعليق الخارجي"
+        if (activeVideoUrl == null || !surfaceAttached || _status.value == PlaybackStatus.IDLE) {
+            _audioError.value = "انتظر حتى يبدأ البث قبل اختيار التعليق الخارجي"
+            _audioStatus.value = PlaybackStatus.ERROR
+            return false
+        }
+        if (url == activeVideoUrl) {
+            _audioError.value = "اختر مصدر تعليق مختلفًا عن رابط القناة الحالية"
             _audioStatus.value = PlaybackStatus.ERROR
             return false
         }
