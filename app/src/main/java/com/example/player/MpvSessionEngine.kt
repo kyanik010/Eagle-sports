@@ -193,6 +193,12 @@ class MpvSessionEngine(context: Context) : Closeable {
     @MainThread
     fun clearExternalAudio() {
         if (released) return
+        if (activeAudioUrl == null) {
+            _manualDelayMs.value = 0
+            _audioStatus.value = PlaybackStatus.IDLE
+            _audioError.value = null
+            return
+        }
         activeAudioUrl = null
         _manualDelayMs.value = 0
         _audioStatus.value = PlaybackStatus.IDLE
