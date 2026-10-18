@@ -10,21 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * DualPlayerController:
- * Orchestrates VideoPlayerEngine and ExternalAudioEngine cleanly as two completely separate engines.
- * Switching audio does NOT reload or recreate the video player.
+ * Media3 owns video playback and a separate Media3 instance owns optional external
+ * commentary. Native libmpv is deliberately not used: the app uses one consistent
+ * playback stack and audio failures cannot tear down the video player.
  */
 class DualPlayerController(
     context: Context,
-    private val scope: CoroutineScope
+    scope: CoroutineScope
 ) {
-    // Keep the legacy Media3 engines available for callers that explicitly use them,
-    // but do not allocate two extra ExoPlayers/HTTP clients during normal libmpv playback.
-    private val videoEngineDelegate = lazy(LazyThreadSafetyMode.NONE) { VideoPlayerEngine(context, scope) }
-    val videoEngine by videoEngineDelegate
-    private val audioEngineDelegate = lazy(LazyThreadSafetyMode.NONE) { ExternalAudioEngine(context, scope) }
-    val audioEngine by audioEngineDelegate
-    val mpvEngine = MpvSessionEngine(context)
+    val videoEngine = VideoPlayerEngine(context, scope)
+    val audioEngine = ExternalAudioEngine(context, scope)
 
     private val _currentChannel = MutableStateFlow<ChannelEntity?>(null)
     val currentChannel: StateFlow<ChannelEntity?> = _currentChannel.asStateFlow()
@@ -39,53 +34,41 @@ class DualPlayerController(
 
     fun playChannel(channel: ChannelEntity) {
         _currentChannel.value = channel
-        // The active libmpv session owns both video and commentary. Stop only that
-        // session; touching legacy engines here would initialize them unnecessarily.
-        mpvEngine.stop()
+        audioEngine.stopExternalAudio()
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
-
-        mpvEngine.playVideo(channel.streamUrl)
+        videoEngine.playChannel(channel)
     }
 
-    /**
-     * Switch to External Audio Track:
-     * - Video continues playing uninterrupted
-     * - Video is NOT reloaded or recreated
-     * - Video player's internal audio track is muted
-     * - Independent ExternalAudioEngine starts playing
-     */
     fun selectExternalAudio(audio: ExternalAudioEntity) {
-        // Commit the UI selection only when libmpv accepts the external stream.
-        // Invalid/unavailable streams should not leave the UI showing a false selection.
-        if (mpvEngine.addExternalAudio(audio.streamUrl)) {
-            _selectedExternalAudio.value = audio
-            _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
+        if (audio.streamUrl == _currentChannel.value?.streamUrl) {
+            return
         }
+        // The external stream has its own Media3 instance. Never recreate or stop video.
+        audioEngine.playExternalAudio(audio)
+        _selectedExternalAudio.value = audio
+        _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
     }
 
-    /**
-     * Revert back to Original Channel Audio:
-     * - Stops external audio engine cleanly
-     * - Unmutes video engine without resetting or seeking video
-     */
     fun selectOriginalAudio() {
-        mpvEngine.clearExternalAudio()
+        audioEngine.stopExternalAudio()
         _audioMode.value = AudioSourceMode.Original
         _selectedExternalAudio.value = null
     }
 
     fun togglePlayPause() {
-        mpvEngine.togglePlayPause()
+        videoEngine.togglePlayPause()
     }
 
     fun stopAll() {
-        mpvEngine.stop()
+        audioEngine.stopExternalAudio()
+        videoEngine.stop()
+        _audioMode.value = AudioSourceMode.Original
+        _selectedExternalAudio.value = null
     }
 
     fun release() {
-        mpvEngine.close()
-        if (videoEngineDelegate.isInitialized()) videoEngine.release()
-        if (audioEngineDelegate.isInitialized()) audioEngine.release()
+        audioEngine.release()
+        videoEngine.release()
     }
 }
