@@ -22,11 +22,7 @@ import java.io.File
  */
 class MpvSessionEngine(context: Context) : Closeable {
     private val appContext = context.applicationContext
-    private val mpv = MPV(
-        appContext,
-        File(appContext.filesDir, "eagle-mpv").absolutePath,
-        File(appContext.cacheDir, "eagle-mpv").absolutePath
-    )
+    private val mpv = MPV()
 
     private val _manualDelayMs = MutableStateFlow(0)
     val manualDelayMs: StateFlow<Int> = _manualDelayMs.asStateFlow()
@@ -52,6 +48,11 @@ class MpvSessionEngine(context: Context) : Closeable {
         // Conservative live-stream profile: bounded demux cache avoids unbounded
         // memory growth while absorbing short network jitter.
         runCatching {
+            mpv.create(appContext)
+            mpv.setOptionString("config", "yes")
+            mpv.setOptionString("config-dir", File(appContext.filesDir, "eagle-mpv").absolutePath)
+            mpv.setOptionString("gpu-shader-cache-dir", File(appContext.cacheDir, "eagle-mpv").absolutePath)
+            mpv.setOptionString("icc-cache-dir", File(appContext.cacheDir, "eagle-mpv").absolutePath)
             mpv.setOptionString("profile", "fast")
             mpv.setOptionString("hwdec", "auto")
             mpv.setOptionString("msg-level", "all=warn")
@@ -60,6 +61,7 @@ class MpvSessionEngine(context: Context) : Closeable {
             mpv.setOptionString("demuxer-max-back-bytes", "16MiB")
             mpv.setOptionString("keep-open", "yes")
             mpv.setOptionString("audio-fallback-to-null", "yes")
+            mpv.init()
             mpv.setPropertyString("vo", "gpu")
             mpv.setPropertyBoolean("pause", true)
         }.onFailure {
@@ -271,6 +273,6 @@ class MpvSessionEngine(context: Context) : Closeable {
         surfaceAttached = false
         _status.value = PlaybackStatus.RELEASED
         _audioStatus.value = PlaybackStatus.RELEASED
-        runCatching { mpv.close() }
+        runCatching { mpv.destroy() }
     }
 }
