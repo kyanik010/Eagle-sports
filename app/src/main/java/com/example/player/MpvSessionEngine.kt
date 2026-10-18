@@ -165,6 +165,7 @@ class MpvSessionEngine(context: Context) : Closeable {
             _audioError.value = "تعذر إضافة التعليق الخارجي: ${it.message ?: it.javaClass.simpleName}"
             false
         }
+    }
 
     /** Manual audio offset only. Positive values delay commentary; negative values advance it. */
     @MainThread
