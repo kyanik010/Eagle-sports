@@ -281,20 +281,29 @@ class ExternalAudioEngine(
     fun setDelay(delay: Int) {
         val clamped = delay.coerceIn(-3000, 3000)
         val previousDelay = _delayMs.value
-        _delayMs.value = clamped
-
-        // Apply only the change from the previous manual setting, not the full
-        // absolute offset on every button press. Video is never touched.
         val positionDelta = clamped - previousDelay
         if (positionDelta == 0) return
 
+        val player = audioPlayer
+        if (player == null || currentAudio == null) {
+            _errorMessage.value = "Select external audio before adjusting delay"
+            return
+        }
+
+        // A positive delay means the commentary should lag the video. For a
+        // seekable source, move the audio playhead backwards by the change;
+        // a negative delay moves it forwards. Never display an applied value
+        // when the live source cannot seek.
+        if (!player.isCurrentMediaItemSeekable) {
+            _errorMessage.value = "This live audio source does not support manual delay; use a seekable stream or the libmpv session engine"
+            return
+        }
+
         try {
-            audioPlayer?.let { player ->
-                if (player.isCurrentMediaItemSeekable) {
-                    val targetPosition = (player.currentPosition + positionDelta).coerceAtLeast(0L)
-                    player.seekTo(targetPosition)
-                }
-            }
+            val targetPosition = (player.currentPosition - positionDelta).coerceAtLeast(0L)
+            player.seekTo(targetPosition)
+            _delayMs.value = clamped
+            _errorMessage.value = null
         } catch (e: Exception) {
             _errorMessage.value = e.message ?: "Unable to adjust external audio delay"
         }
