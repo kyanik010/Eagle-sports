@@ -16,6 +16,8 @@ android {
     applicationId = "com.aistudio.eaglesports.vxkz"
     minSdk = 24
     targetSdk = 36
+    // Package only 64-bit ARM native libraries in this APK; keep all app features/dependencies.
+    ndk { abiFilters += setOf("arm64-v8a") }
     versionCode = 100 + (System.getenv("VERSION_CODE")?.toIntOrNull() ?: 0)
     versionName = "1.0"
 
