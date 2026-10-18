@@ -56,12 +56,12 @@ class DualPlayerController(
      * - Independent ExternalAudioEngine starts playing
      */
     fun selectExternalAudio(audio: ExternalAudioEntity) {
-        _selectedExternalAudio.value = audio
-        _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
-
-        // Add commentary to the same libmpv session as the live video.
-        // This keeps one playback clock and leaves delay entirely user-controlled.
-        mpvEngine.addExternalAudio(audio.streamUrl)
+        // Commit the UI selection only when libmpv accepts the external stream.
+        // Invalid/unavailable streams should not leave the UI showing a false selection.
+        if (mpvEngine.addExternalAudio(audio.streamUrl)) {
+            _selectedExternalAudio.value = audio
+            _audioMode.value = AudioSourceMode.External(audio.stableId, audio.title)
+        }
     }
 
     /**
